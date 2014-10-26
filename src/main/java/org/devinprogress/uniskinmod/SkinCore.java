@@ -107,14 +107,16 @@ public class SkinCore implements IFMLLoadingPlugin{
         return null;
     }
 
-    public static String getSkinUrl(String playerName){
-        return getInstance().testURLs(StringUtils.stripControlCodes(playerName),
-                getInstance().SkinURLs,"http://skins.minecraft.net/MinecraftSkins/%s.png");
-    }
-
-    public static String getCloakUrl(String playerName){
-        return getInstance().testURLs(StringUtils.stripControlCodes(playerName),
-                getInstance().CloakURLs,"http://skins.minecraft.net/MinecraftCloaks/%s.png");
+    public static String alterURL(String link){
+        if (link.startsWith("http://skins.minecraft.net/MinecraftSkins/")){
+            String p=link.substring(link.lastIndexOf("/")+1,link.length()-4);
+            return getInstance().testURLs(p,getInstance().SkinURLs,"http://skins.minecraft.net/MinecraftSkins/%s.png");
+        }
+        if (link.startsWith("http://skins.minecraft.net/MinecraftCloaks/")){
+            String p=link.substring(link.lastIndexOf("/")+1,link.length()-4);
+            return getInstance().testURLs(p,getInstance().CloakURLs,"http://skins.minecraft.net/MinecraftCloaks/%s.png");
+        }
+        return link;
     }
 
     private String testURLs(String playerName,List<String> templates,String defaultTemplate){
@@ -144,7 +146,7 @@ public class SkinCore implements IFMLLoadingPlugin{
             else
                 return false;
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             return false;
         }
     }

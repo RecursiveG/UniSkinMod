@@ -65,6 +65,25 @@ public class ASMHelper {
         return cw.toByteArray();
     }
 
+    public static AbstractInsnNode getNthInsnNode(MethodNode mn,int opcode,int N){
+        AbstractInsnNode n=mn.instructions.getFirst();
+        int count=0;
+        while(n!=null){
+            if(n.getOpcode()==opcode){
+                count++;
+                if(count==N)
+                    break;
+            }
+            n=n.getNext();
+        }
+        return n;
+    }
+
+    public static void InsertInvokeStaticAfter(MethodNode mn,AbstractInsnNode n,String targetClass,String targetMethod,String desc){
+        mn.instructions.insert(n, new MethodInsnNode(Opcodes.INVOKESTATIC,
+                targetClass.replace('.', '/'), targetMethod, desc));
+    }
+
     public class MethodRecord{
         public String ClassName;
         public String MethodName;

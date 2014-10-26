@@ -31,26 +31,12 @@ public class CoreTransformer implements IClassTransformer {
 
     public CoreTransformer(){
         asm=new ASMHelper(this);
-        asm.add("net.minecraft.client.entity.AbstractClientPlayer","c","getSkinUrl","(Ljava/lang/String;)Ljava/lang/String;","(Ljava/lang/String;)Ljava/lang/String;","hijackSkinURL");
-        asm.add("net.minecraft.client.entity.AbstractClientPlayer","d","getCapeUrl","(Ljava/lang/String;)Ljava/lang/String;","(Ljava/lang/String;)Ljava/lang/String;","hijackCloakURL");
+        asm.add("net.minecraft.client.renderer.ThreadDownloadImageData$1","run","run","()V","()V","hijackURL");
     }
 
-    public static void hijackSkinURL(MethodNode mn){
-        mn.instructions.clear();
-        mn.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        mn.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"org/devinprogress/uniskinmod/SkinCore","getSkinUrl","(Ljava/lang/String;)Ljava/lang/String;"));
-        mn.instructions.add(new InsnNode(Opcodes.ARETURN));
-        mn.maxStack=1;
-        mn.maxLocals=1;
-    }
-
-    public static void hijackCloakURL(MethodNode mn){
-        mn.instructions.clear();
-        mn.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        mn.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"org/devinprogress/uniskinmod/SkinCore","getCloakUrl","(Ljava/lang/String;)Ljava/lang/String;"));
-        mn.instructions.add(new InsnNode(Opcodes.ARETURN));
-        mn.maxStack=1;
-        mn.maxLocals=1;
+    public static void hijackURL(MethodNode mn){
+        AbstractInsnNode n=ASMHelper.getNthInsnNode(mn,Opcodes.INVOKESTATIC,1);
+        ASMHelper.InsertInvokeStaticAfter(mn,n,"org.devinprogress.uniskinmod.SkinCore","alterURL","(Ljava/lang/String;)Ljava/lang/String;");
     }
 
 	@Override

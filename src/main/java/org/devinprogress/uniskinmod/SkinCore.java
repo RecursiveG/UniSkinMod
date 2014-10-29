@@ -3,14 +3,19 @@ package org.devinprogress.uniskinmod;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
-import net.minecraft.util.StringUtils;
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 
-@IFMLLoadingPlugin.MCVersion("1.7.2")
+import net.minecraft.util.StringUtils;
+import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
+
+@IFMLLoadingPlugin.MCVersion("1.8")
 public class SkinCore implements IFMLLoadingPlugin{
     public static boolean ObfuscatedEnv=true;
     private static SkinCore instance=null;
@@ -107,16 +112,40 @@ public class SkinCore implements IFMLLoadingPlugin{
         return null;
     }
 
-    public static String alterURL(String link){
-        if (link.startsWith("http://skins.minecraft.net/MinecraftSkins/")){
-            String p=link.substring(link.lastIndexOf("/")+1,link.length()-4);
-            return getInstance().testURLs(p,getInstance().SkinURLs,"http://skins.minecraft.net/MinecraftSkins/%s.png");
+    private class playerSkinData{
+        public String skin,cape,model;
+        public playerSkinData(String skinURL,String capeURL,String model){
+            skin=skinURL;
+            cape=capeURL;
+            if(model==null)
+                this.model="default";
+            else
+                this.model=model.equalsIgnoreCase("alex")?"alex":"default";
         }
-        if (link.startsWith("http://skins.minecraft.net/MinecraftCloaks/")){
-            String p=link.substring(link.lastIndexOf("/")+1,link.length()-4);
-            return getInstance().testURLs(p,getInstance().CloakURLs,"http://skins.minecraft.net/MinecraftCloaks/%s.png");
+    }
+    
+    public static void injectTexture(HashMap map,GameProfile profile){
+        //log("Invoked for Player: "+profile.getName());
+        //log(map.containsKey(MinecraftProfileTexture.Type.CAPE)?"Contain Cape":"No Cape");
+        //log(map.containsKey(MinecraftProfileTexture.Type.SKIN)?"Contain Skin":"No Skin");
+        
+        if (map.containsKey(MinecraftProfileTexture.Type.CAPE)&&map.containsKey(MinecraftProfileTexture.Type.SKIN))
+            return;
+        final playerSkinData data=getInstance().getPlayerData(profile.getName(),profile.getId().toString());
+        if((!map.containsKey(MinecraftProfileTexture.Type.CAPE))&&(data.cape!=null)){
+            map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape,null));
         }
-        return link;
+        if((!map.containsKey(MinecraftProfileTexture.Type.SKIN))&&(data.skin!=null)){
+            map.put(MinecraftProfileTexture.Type.SKIN,new MinecraftProfileTexture(data.skin,
+                    new HashMap<String,String>(){{put("model",data.model);}}));
+        }
+    }
+    
+    public playerSkinData getPlayerData(String name,String uuid){
+        String skinURL=testURLs(name,SkinURLs,"http://skins.minecraft.net/MinecraftSkins/%s.png");
+        String capeURL=testURLs(name,CloakURLs,"http://skins.minecraft.net/MinecraftCloaks/%s.png");
+        String model="default";
+        return new playerSkinData(skinURL,capeURL,model);
     }
 
     private String testURLs(String playerName,List<String> templates,String defaultTemplate){
@@ -127,7 +156,8 @@ public class SkinCore implements IFMLLoadingPlugin{
                 return url;
             }
         }
-        return String.format(defaultTemplate,playerName);
+        //return String.format(defaultTemplate,playerName);
+        return null;
     }
 
     private boolean checkURL(String link){
@@ -149,5 +179,27 @@ public class SkinCore implements IFMLLoadingPlugin{
             //e.printStackTrace();
             return false;
         }
+    }
+
+    public static String SHA1SUM(String str){
+        try{
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA1");
+            messageDigest.update(str.getBytes());
+            return toHex(messageDigest.digest());
+        }catch(Exception e){
+            e.printStackTrace();
+            return "MissingTexture";
+        }        
+    }
+
+    private static final char[] HEX_DIGITS = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+    private static String toHex(byte[] bytes) {
+        int len = bytes.length;
+        StringBuilder buf = new StringBuilder(len*2);
+        for (int i = 0; i < len; i++) {
+            buf.append(HEX_DIGITS[(bytes[i] >> 4) & 0x0f]);
+            buf.append(HEX_DIGITS[bytes[i] & 0x0f]);
+        }
+        return buf.toString();
     }
 }

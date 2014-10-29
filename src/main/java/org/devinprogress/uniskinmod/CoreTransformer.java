@@ -13,6 +13,7 @@ import net.minecraft.launchwrapper.IClassTransformer;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -24,21 +25,49 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import cpw.mods.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
-
 public class CoreTransformer implements IClassTransformer {
+    // Hack into SkinManager$3.run()V
+    // Insert code after the IF and hijack hashmap
+    // Add MinecraftTextureProfile Manually
+    // you have also pass p_152790_1_(GameProfile)
+    
+    // Hack into MinecraftProfileTexture.getHash()Ljava/lang/String;
+    // SHA-1 of the url as the hash instead of the filename
+    // workaround for different format of skin urls.
     private ASMHelper asm=null;
 
     public CoreTransformer(){
         asm=new ASMHelper(this);
-        asm.add("net.minecraft.client.renderer.ThreadDownloadImageData$1","run","run","()V","()V","hijackURL");
+        asm.add("net.minecraft.client.resources.SkinManager$3","run","run","()V","()V","injectCode");
+        asm.add("com.mojang.authlib.minecraft.MinecraftProfileTexture", "getHash", "getHash", "()Ljava/lang/String;", "()Ljava/lang/String;","newHash");
     }
 
-    public static void hijackURL(MethodNode mn){
-        AbstractInsnNode n=ASMHelper.getNthInsnNode(mn,Opcodes.INVOKESTATIC,1);
-        ASMHelper.InsertInvokeStaticAfter(mn,n,"org.devinprogress.uniskinmod.SkinCore","alterURL","(Ljava/lang/String;)Ljava/lang/String;");
+    public static void injectCode(MethodNode mn){
+        // Code to be inserted:
+        // org.devinprogress.uniskinmod.SkinCore.injectTexture(hashmap,p_152790_1_);
+        // load hashmap using ALOAD_1
+        SkinCore.log("ASMTransformer Invoked");
+        AbstractInsnNode n=ASMHelper.getNthInsnNode(mn,Opcodes.GETFIELD,2);
+        FieldInsnNode loadGameProfileToStack=(FieldInsnNode) ((FieldInsnNode)n).clone(null);
+        n=ASMHelper.getNthInsnNode(mn, Opcodes.INVOKEVIRTUAL,8);
+        n=n.getNext().getNext();
+        mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD,1));
+        mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD,0));
+        mn.instructions.insertBefore(n, loadGameProfileToStack);
+        ASMHelper.InsertInvokeStaticBefore(mn,n,"org.devinprogress.uniskinmod.SkinCore","injectTexture","(Ljava/util/HashMap;Lcom/mojang/authlib/GameProfile;)V");
     }
 
+    public static void newHash(MethodNode mn){
+        SkinCore.log("hash Transformer Hit");
+        mn.instructions.clear();
+        mn.instructions.add(new VarInsnNode(Opcodes.ALOAD,0));
+        mn.instructions.add(new FieldInsnNode(Opcodes.GETFIELD,"com/mojang/authlib/minecraft/MinecraftProfileTexture","url","Ljava/lang/String;"));
+        mn.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"org/devinprogress/uniskinmod/SkinCore","SHA1SUM","(Ljava/lang/String;)Ljava/lang/String;",false));
+        mn.instructions.add(new InsnNode(Opcodes.ARETURN));
+        mn.maxLocals=1;
+        mn.maxStack=1;
+    }
+    
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] bytes) {
         return asm.transform(transformedName,bytes);

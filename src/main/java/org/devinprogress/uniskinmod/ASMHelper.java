@@ -79,9 +79,9 @@ public class ASMHelper {
         return n;
     }
 
-    public static void InsertInvokeStaticAfter(MethodNode mn,AbstractInsnNode n,String targetClass,String targetMethod,String desc){
-        mn.instructions.insert(n, new MethodInsnNode(Opcodes.INVOKESTATIC,
-                targetClass.replace('.', '/'), targetMethod, desc));
+    public static void InsertInvokeStaticBefore(MethodNode mn,AbstractInsnNode n,String targetClass,String targetMethod,String desc){
+        mn.instructions.insertBefore(n, new MethodInsnNode(Opcodes.INVOKESTATIC,
+                targetClass.replace('.', '/'), targetMethod, desc,false));
     }
 
     public class MethodRecord{

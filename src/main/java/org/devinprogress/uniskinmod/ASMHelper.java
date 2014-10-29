@@ -79,6 +79,13 @@ public class ASMHelper {
         return n;
     }
 
+    public static AbstractInsnNode getLabel(AbstractInsnNode n){
+        if(!(n instanceof JumpInsnNode)){
+            throw new RuntimeException("Not a valid JumpInsnNode");
+        }else{
+            return ((JumpInsnNode)n).label;
+        }
+    }
     public static void InsertInvokeStaticBefore(MethodNode mn,AbstractInsnNode n,String targetClass,String targetMethod,String desc){
         mn.instructions.insertBefore(n, new MethodInsnNode(Opcodes.INVOKESTATIC,
                 targetClass.replace('.', '/'), targetMethod, desc,false));

@@ -49,8 +49,9 @@ public class CoreTransformer implements IClassTransformer {
         SkinCore.log("ASMTransformer Invoked");
         AbstractInsnNode n=ASMHelper.getNthInsnNode(mn,Opcodes.GETFIELD,2);
         FieldInsnNode loadGameProfileToStack=(FieldInsnNode) ((FieldInsnNode)n).clone(null);
-        n=ASMHelper.getNthInsnNode(mn, Opcodes.INVOKEVIRTUAL,8);
-        n=n.getNext().getNext();
+        n=ASMHelper.getNthInsnNode(mn, Opcodes.IFEQ,1);
+        n=ASMHelper.getLabel(n).getNext();
+        
         mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD,1));
         mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD,0));
         mn.instructions.insertBefore(n, loadGameProfileToStack);

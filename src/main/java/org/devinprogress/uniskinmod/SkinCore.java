@@ -21,6 +21,9 @@ public class SkinCore implements IFMLLoadingPlugin{
     private List<String> SkinURLs=new ArrayList<String>();
     private List<String> CloakURLs=new ArrayList<String>();
 
+    private boolean noCleanup=false;
+    public static boolean useMojangStyledHash=false;
+
     public SkinCore(){
         if(instance!=null)
             throw new RuntimeException("Duplicated Initialization for SkinCore");
@@ -87,6 +90,16 @@ public class SkinCore implements IFMLLoadingPlugin{
             }
             br.close();
             fr.close();
+
+            if(!noCleanup){
+                File skin_dir=new File(((File) data.get("mcLocation")).getAbsolutePath()
+                        + File.separatorChar + "assets" + File.separatorChar
+                        + "skins");
+                if(skin_dir.exists()&&skin_dir.isDirectory()){
+                    skin_dir.delete();
+                    log("Skin Cache Cleared.");
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -94,16 +107,34 @@ public class SkinCore implements IFMLLoadingPlugin{
 
     private boolean tryProcessLine(String line){
         log("Processing:"+line);
+        line=line.trim();
         if(line.startsWith("#"))return true;
         if(!line.contains("%s"))return false;
         if(line.startsWith("Skin: ")){
             SkinURLs.add(line.split(" ",2)[1]);
-        }else if(line.startsWith("Cloak: ")){
-            CloakURLs.add(line.split(" ",2)[1]);
+        }else if(line.startsWith("Cloak: ")) {
+            CloakURLs.add(line.split(" ", 2)[1]);
+        }else if(line.startsWith(":")){
+            if(tryProcessOption(line.substring(1).trim()))
+                return true;
+            else
+                return false;
         }else{
             return false;
         }
         return true;
+    }
+
+    private boolean tryProcessOption(String line){
+        if(line.equalsIgnoreCase("nocleanup")){
+            noCleanup=true;
+            return true;
+        }else if(line.equalsIgnoreCase("usemojangstyledhash")){
+            useMojangStyledHash=true;
+            return true;
+        }else{
+            return false;
+        }
     }
 
     @Override

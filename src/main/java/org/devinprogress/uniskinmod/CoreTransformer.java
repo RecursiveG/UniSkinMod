@@ -30,7 +30,7 @@ public class CoreTransformer implements IClassTransformer {
     // Insert code after the IF and hijack hashmap
     // Add MinecraftTextureProfile Manually
     // you have also pass p_152790_1_(GameProfile)
-    
+
     // Hack into MinecraftProfileTexture.getHash()Ljava/lang/String;
     // SHA-1 of the url as the hash instead of the filename
     // workaround for different format of skin urls.
@@ -52,7 +52,7 @@ public class CoreTransformer implements IClassTransformer {
         FieldInsnNode loadGameProfileToStack=(FieldInsnNode) ((FieldInsnNode)n).clone(null);
         n=ASMHelper.getNthInsnNode(mn, Opcodes.IFEQ,1);
         n=ASMHelper.getLabel(n).getNext();
-        
+
         mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD,1));
         mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD,0));
         mn.instructions.insertBefore(n, loadGameProfileToStack);
@@ -67,6 +67,7 @@ public class CoreTransformer implements IClassTransformer {
 
     public static void newHash(MethodNode mn){
         SkinCore.log("hash Transformer Hit");
+        if(SkinCore.useMojangStyledHash)return;
         mn.instructions.clear();
         mn.instructions.add(new VarInsnNode(Opcodes.ALOAD,0));
         mn.instructions.add(new FieldInsnNode(Opcodes.GETFIELD,"com/mojang/authlib/minecraft/MinecraftProfileTexture","url","Ljava/lang/String;"));
@@ -75,7 +76,7 @@ public class CoreTransformer implements IClassTransformer {
         mn.maxLocals=1;
         mn.maxStack=1;
     }
-    
+
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] bytes) {
         return asm.transform(transformedName,bytes);

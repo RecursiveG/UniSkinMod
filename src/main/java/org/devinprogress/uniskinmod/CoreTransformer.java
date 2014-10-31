@@ -39,6 +39,7 @@ public class CoreTransformer implements IClassTransformer {
     public CoreTransformer(){
         asm=new ASMHelper(this);
         asm.add("net.minecraft.client.resources.SkinManager$3","run","run","()V","()V","injectCode");
+        asm.add("net.minecraft.client.renderer.ImageBufferDownload","b","setAreaOpaque","(IIII)V","(IIII)V","noOpaque");
         asm.add("com.mojang.authlib.minecraft.MinecraftProfileTexture", "getHash", "getHash", "()Ljava/lang/String;", "()Ljava/lang/String;","newHash");
     }
 
@@ -56,6 +57,12 @@ public class CoreTransformer implements IClassTransformer {
         mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD,0));
         mn.instructions.insertBefore(n, loadGameProfileToStack);
         ASMHelper.InsertInvokeStaticBefore(mn,n,"org.devinprogress.uniskinmod.SkinCore","injectTexture","(Ljava/util/HashMap;Lcom/mojang/authlib/GameProfile;)V");
+    }
+
+    public static void noOpaque(MethodNode mn){
+        mn.instructions.clear();
+        mn.instructions.add(new InsnNode(Opcodes.RETURN));
+        mn.maxLocals=1;mn.maxStack=0;
     }
 
     public static void newHash(MethodNode mn){

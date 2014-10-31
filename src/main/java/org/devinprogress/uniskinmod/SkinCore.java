@@ -67,10 +67,10 @@ public class SkinCore implements IFMLLoadingPlugin{
                 f.createNewFile();
                 FileWriter fw = new FileWriter(cfgPath);
                 BufferedWriter bw = new BufferedWriter(fw);
-                bw.write("#Skin: http://your.domain/**** ");bw.newLine();
-                bw.write("#Cloak: http://your.domain/**** ");bw.newLine();
-                bw.write("#Use '%s' to represent the player's name.");bw.newLine();
-                bw.write("#The file is Case-Sensitive.");bw.newLine();
+                bw.write("Skin: http://www.skinme.cc/MinecraftSkins/%s.png");bw.newLine();
+                bw.write("Cloak: http://www.skinme.cc/MinecraftCloaks/%s.png");bw.newLine();
+                bw.write("Skin: http://skins.minecraft.net/MinecraftSkins/%s.png");bw.newLine();
+                bw.write("Cloak: http://skins.minecraft.net/MinecraftCloaks/%s.png");bw.newLine();
                 bw.flush();bw.close();fw.close();
             }
 
@@ -79,7 +79,7 @@ public class SkinCore implements IFMLLoadingPlugin{
             String theLine;
             while (br.ready()) {
                 theLine = br.readLine();
-                if (theLine.startsWith("#"))
+                if (theLine.startsWith("#")||theLine.equals(""))
                     continue;
                 if (!tryProcessLine(theLine)){//failed
                     log("Failed to process the config line: '"+theLine+"'");

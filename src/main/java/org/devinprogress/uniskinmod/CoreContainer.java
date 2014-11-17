@@ -2,13 +2,12 @@ package org.devinprogress.uniskinmod;
 
 import java.util.Arrays;
 
-import net.minecraftforge.fml.common.DummyModContainer;
-import net.minecraftforge.fml.common.LoadController;
-import net.minecraftforge.fml.common.ModMetadata;
-
 import com.google.common.eventbus.EventBus;
+import cpw.mods.fml.common.DummyModContainer;
+import cpw.mods.fml.common.LoadController;
+import cpw.mods.fml.common.ModMetadata;
 
-public class CoreContainer extends DummyModContainer{
+public class CoreContainer extends DummyModContainer {
     public CoreContainer()
     {
         super(new ModMetadata());
@@ -17,7 +16,7 @@ public class CoreContainer extends DummyModContainer{
         meta.name = "Universal Skin Mod";
         meta.version = "1.1";
         meta.authorList = Arrays.asList("RecursiveG");
-        meta.description = "A Coremod provided the ability to access to many skin servers.\nView config/UniSkinMod.cfg for more information.";
+        meta.description = "A Coremod provided the ability to access to many skin servers.";
         meta.url = "https://github.com/RecursiveG/UniSkinMod";
     }
 

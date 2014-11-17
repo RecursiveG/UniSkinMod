@@ -11,12 +11,12 @@ import java.util.Map;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
-import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
+import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.logging.log4j.LogManager;
 
 
-@IFMLLoadingPlugin.MCVersion("1.7.10")
-public class SkinCore implements IFMLLoadingPlugin{
+@IFMLLoadingPlugin.MCVersion("1.8")
+public class SkinCore implements IFMLLoadingPlugin {
     public static boolean ObfuscatedEnv=true;
     private static SkinCore instance=null;
     private List<String> SkinURLs=new ArrayList<String>();
@@ -155,10 +155,11 @@ public class SkinCore implements IFMLLoadingPlugin{
             return;
         final playerSkinData data=getInstance().getPlayerData(profile.getName(),profile.getId().toString());
         if((!map.containsKey(MinecraftProfileTexture.Type.CAPE))&&(data.cape!=null)){
-            map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape));
+            map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape,null));
         }
         if((!map.containsKey(MinecraftProfileTexture.Type.SKIN))&&(data.skin!=null)){
-            map.put(MinecraftProfileTexture.Type.SKIN,new MinecraftProfileTexture(data.skin));
+            map.put(MinecraftProfileTexture.Type.SKIN,new MinecraftProfileTexture(data.skin,
+                    new HashMap<String,String>(){{put("model",data.model);}}));
         }
     }
     

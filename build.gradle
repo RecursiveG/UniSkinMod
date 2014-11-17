@@ -15,16 +15,16 @@ buildscript {
     }
 }
 
-apply plugin: 'forge'
+apply plugin: 'fml'
 
 version = "1.2-dev2"
 group= "org.devinprogress.uniskinmod" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "UniSkinMod"
 
 minecraft {
-    version = "1.7.10-10.13.2.1230"
-    mappings = 'stable_12'
+    version = "1.8-8.0.9.1016-1.8"
     runDir = "eclipse"
+    mappings = "snapshot_20141116"
 }
 
 jar

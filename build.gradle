@@ -23,6 +23,7 @@ archivesBaseName = "UniSkinMod"
 
 minecraft {
     version = "1.7.10-10.13.2.1230"
+    mappings = 'stable_12'
     runDir = "eclipse"
 }
 

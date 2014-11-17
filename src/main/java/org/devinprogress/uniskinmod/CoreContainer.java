@@ -16,7 +16,7 @@ public class CoreContainer extends DummyModContainer {
         meta.name = "Universal Skin Mod";
         meta.version = "1.1";
         meta.authorList = Arrays.asList("RecursiveG");
-        meta.description = "A Coremod provided the ability to access to many skin servers.\nView config/UniSkinMod.cfg for more information.";
+        meta.description = "A Coremod provided the ability to access to many skin servers.";
         meta.url = "https://github.com/RecursiveG/UniSkinMod";
     }
 

@@ -38,18 +38,17 @@ public class CoreTransformer implements IClassTransformer {
 
     public CoreTransformer(){
         asm=new ASMHelper(this);
-        asm.add("net.minecraft.client.resources.SkinManager$3","run","run","()V","()V","injectCode");
-        asm.add("net.minecraft.client.renderer.ImageBufferDownload","b","setAreaOpaque","(IIII)V","(IIII)V","noOpaque");
-        asm.add("com.mojang.authlib.minecraft.MinecraftProfileTexture", "getHash", "getHash", "()Ljava/lang/String;", "()Ljava/lang/String;","newHash");
+        asm.hookMethod("net.minecraft.client.resources.SkinManager$3",        "run",         "run",          "()V",                 "injectCode");
+        asm.hookMethod("net.minecraft.client.renderer.ImageBufferDownload",   "func_78433_b","setAreaOpaque","(IIII)V",             "noOpaque");
+        asm.hookMethod("com.mojang.authlib.minecraft.MinecraftProfileTexture","getHash",     "getHash",      "()Ljava/lang/String;","newHash");
     }
 
     public static void injectCode(MethodNode mn){
         // Code to be inserted:
         // org.devinprogress.uniskinmod.SkinCore.injectTexture(hashmap,p_152790_1_);
         // load hashmap using ALOAD_1
-        SkinCore.log("ASMTransformer Invoked");
         AbstractInsnNode n=ASMHelper.getNthInsnNode(mn,Opcodes.GETFIELD,2);
-        FieldInsnNode loadGameProfileToStack=(FieldInsnNode) ((FieldInsnNode)n).clone(null);
+        FieldInsnNode loadGameProfileToStack=(FieldInsnNode)(n.clone(null));
         n=ASMHelper.getNthInsnNode(mn, Opcodes.IFEQ,1);
         n=ASMHelper.getLabel(n).getNext();
 
@@ -66,8 +65,6 @@ public class CoreTransformer implements IClassTransformer {
     }
 
     public static void newHash(MethodNode mn){
-        SkinCore.log("hash Transformer Hit");
-        if(SkinCore.useMojangStyledHash)return;
         mn.instructions.clear();
         mn.instructions.add(new VarInsnNode(Opcodes.ALOAD,0));
         mn.instructions.add(new FieldInsnNode(Opcodes.GETFIELD,"com/mojang/authlib/minecraft/MinecraftProfileTexture","url","Ljava/lang/String;"));
@@ -79,6 +76,6 @@ public class CoreTransformer implements IClassTransformer {
 
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] bytes) {
-        return asm.transform(transformedName,bytes);
+        return asm.transform(name,transformedName,bytes);
 	}
 }

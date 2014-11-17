@@ -1,6 +1,5 @@
 package org.devinprogress.uniskinmod;
 
-
 import cpw.mods.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -11,8 +10,24 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * Created by recursiveg on 14-10-21.
+ This file is part of Universal Skin Mod,
+ Copyright (C) 2014  RecursiveG
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License along
+ with this program; if not, write to the Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
 public class ASMHelper {
     private Object obj;
     //Map<DeobfuscatedClassName,Map<methodName+Desc,processMethod>>
@@ -45,12 +60,10 @@ public class ASMHelper {
         cr.accept(cn, 0);
 
         for(MethodNode mn:cn.methods){
-            //System.out.println(String.format("Examing Method: %s%s",mn.name,mn.desc));
             String methodName=FMLDeobfuscatingRemapper.INSTANCE.mapMethodName(obfClassName,mn.name,mn.desc);
             String methodDesc=FMLDeobfuscatingRemapper.INSTANCE.mapMethodDesc(mn.desc);
             if(transMap.containsKey(methodName+methodDesc)){
                 try{
-                    //System.out.println(String.format("Invoking Method: %s%s",mn.name,mn.desc));
                     transMap.get(methodName+methodDesc).invoke(obj,mn);
                 }catch(Exception e){
                     e.printStackTrace();
@@ -88,39 +101,5 @@ public class ASMHelper {
     public static void InsertInvokeStaticBefore(MethodNode mn,AbstractInsnNode n,String targetClass,String targetMethod,String desc){
         mn.instructions.insertBefore(n, new MethodInsnNode(Opcodes.INVOKESTATIC,
                 targetClass.replace('.', '/'), targetMethod, desc,false));
-    }
-
-    public class MethodRecord{
-        public String ClassName;
-        public String MethodName;
-        public String MethodNameDeobf;
-        public String Desc;
-        public String DescDeobf;
-        public String ProcessMethodName;
-        public Method ProcessMethod;
-        private boolean flag=false;
-        public MethodRecord(String a,String b,String c,String d,String e,String f){
-            ClassName=a;
-            MethodName=b;
-            MethodNameDeobf=c;
-            Desc=d;
-            DescDeobf=e;
-            ProcessMethodName=f;
-        }
-
-        public void preProcess(boolean Deobf,Object o){
-            if(flag)return;
-
-            if(Deobf){
-                MethodName=MethodNameDeobf;
-                Desc=DescDeobf;
-            }
-            try{
-                ProcessMethod=o.getClass().getDeclaredMethod(ProcessMethodName,MethodNode.class);
-            }catch(Exception e){
-                e.printStackTrace();
-            }
-            flag=true;
-        }
     }
 }

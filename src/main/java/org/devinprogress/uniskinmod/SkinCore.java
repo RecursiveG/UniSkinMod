@@ -12,6 +12,7 @@ import java.util.Map;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 
 /**
@@ -86,9 +87,12 @@ public class SkinCore implements IFMLLoadingPlugin{
             File skin_dir=new File(((File) data.get("mcLocation")).getAbsolutePath()
                     + File.separatorChar + "assets" + File.separatorChar
                     + "skins");
-            if(skin_dir.exists()&&skin_dir.isDirectory()){
-                skin_dir.delete();
+            try {
+                FileUtils.deleteDirectory(skin_dir);
                 LogManager.getLogger("UniSkinMod").info("Skin cache cleaned.");
+            } catch (IOException e) {
+                LogManager.getLogger("UniSkinMod").warn("Failed to clean cache.");
+                e.printStackTrace();
             }
         }
     }

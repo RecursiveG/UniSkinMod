@@ -17,9 +17,9 @@ buildscript {
 
 apply plugin: 'fml'
 
-version = "1.2-dev2"
+version = "1.2-dev3"
 group= "org.devinprogress.uniskinmod" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "UniSkinMod"
+archivesBaseName = "UniSkinMod-1.8"
 
 minecraft {
     version = "1.8-8.0.9.1016-1.8"

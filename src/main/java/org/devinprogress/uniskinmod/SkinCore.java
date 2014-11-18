@@ -12,8 +12,27 @@ import java.util.Map;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 
+/**
+ This file is part of Universal Skin Mod,
+ Copyright (C) 2014  RecursiveG
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License along
+ with this program; if not, write to the Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
 
 @IFMLLoadingPlugin.MCVersion("1.8")
 public class SkinCore implements IFMLLoadingPlugin {
@@ -68,9 +87,12 @@ public class SkinCore implements IFMLLoadingPlugin {
             File skin_dir=new File(((File) data.get("mcLocation")).getAbsolutePath()
                     + File.separatorChar + "assets" + File.separatorChar
                     + "skins");
-            if(skin_dir.exists()&&skin_dir.isDirectory()){
-                skin_dir.delete();
+            try {
+                FileUtils.deleteDirectory(skin_dir);
                 LogManager.getLogger("UniSkinMod").info("Skin cache cleaned.");
+            } catch (IOException e) {
+                LogManager.getLogger("UniSkinMod").warn("Failed to clean cache.");
+                e.printStackTrace();
             }
         }
     }

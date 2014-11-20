@@ -10,6 +10,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 
 /**
@@ -214,8 +215,13 @@ public class SkinCore implements IFMLLoadingPlugin {
         return null;
     }
 
-    public static String getHashForTexture(String str){
-        return SHA1SUM(str);
+    public static String getHashForTexture(String url){
+        String fileName= FilenameUtils.getBaseName(url);
+        if(fileName.length()<=30)return SHA1SUM(url);
+        for(int i=0;i<fileName.length();i++)
+            if("0123456789abcdefABCDEF".indexOf(fileName.charAt(i))<0)
+                return SHA1SUM(url);
+        return fileName;
     }
 
     private static final char[] HEX_DIGITS = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};

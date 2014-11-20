@@ -173,6 +173,8 @@ public class SkinCore implements IFMLLoadingPlugin {
         //log(map.containsKey(MinecraftProfileTexture.Type.CAPE)?"Contain Cape":"No Cape");
         //log(map.containsKey(MinecraftProfileTexture.Type.SKIN)?"Contain Skin":"No Skin");
 
+        if(System.getProperty("uniskinmod.forceCustomServers","false").equals("true"))
+            map.clear();
         if (map.containsKey(MinecraftProfileTexture.Type.CAPE)&&map.containsKey(MinecraftProfileTexture.Type.SKIN))
             return;
         final playerSkinData data=getInstance().getPlayerData(profile.getName(),profile.getId().toString());

@@ -4,10 +4,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
@@ -217,24 +214,25 @@ public class SkinCore implements IFMLLoadingPlugin {
         return null;
     }
 
-    public static String SHA1SUM(String str){
+    public static String getHashForTexture(String str){
+        return SHA1SUM(str);
+    }
+
+    private static final char[] HEX_DIGITS = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+    private static String SHA1SUM(String str){
         try{
             MessageDigest messageDigest = MessageDigest.getInstance("SHA1");
             messageDigest.update(str.getBytes());
-            return toHex(messageDigest.digest());
+            byte[] bytes=messageDigest.digest();
+            StringBuilder buf = new StringBuilder(bytes.length*2);
+            for(byte b:bytes){
+                buf.append(HEX_DIGITS[(b>>4)&0x0f]);
+                buf.append(HEX_DIGITS[ b    &0x0f]);
+            }
+            return buf.toString();
         }catch(Exception e){
             e.printStackTrace();
             return "MissingTexture";
         }        
-    }
-
-    private static final char[] HEX_DIGITS = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
-    private static String toHex(byte[] bytes) {
-        StringBuilder buf = new StringBuilder(bytes.length*2);
-        for(byte b:bytes){
-            buf.append(HEX_DIGITS[(b>>4)&0x0f]);
-            buf.append(HEX_DIGITS[ b    &0x0f]);
-        }
-        return buf.toString();
     }
 }

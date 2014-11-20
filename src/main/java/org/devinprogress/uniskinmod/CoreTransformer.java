@@ -72,7 +72,7 @@ public class CoreTransformer implements IClassTransformer {
         mn.instructions.clear();
         mn.instructions.add(new VarInsnNode(Opcodes.ALOAD,0));
         mn.instructions.add(new FieldInsnNode(Opcodes.GETFIELD,"com/mojang/authlib/minecraft/MinecraftProfileTexture","url","Ljava/lang/String;"));
-        mn.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"org/devinprogress/uniskinmod/SkinCore","SHA1SUM","(Ljava/lang/String;)Ljava/lang/String;",false));
+        mn.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"org/devinprogress/uniskinmod/SkinCore","getHashForTexture","(Ljava/lang/String;)Ljava/lang/String;",false));
         mn.instructions.add(new InsnNode(Opcodes.ARETURN));
         mn.maxLocals=1;
         mn.maxStack=1;

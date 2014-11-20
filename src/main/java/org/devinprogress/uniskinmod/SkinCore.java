@@ -162,7 +162,7 @@ public class SkinCore implements IFMLLoadingPlugin {
             if(model==null)
                 this.model="default";
             else
-                this.model=model.equalsIgnoreCase("alex")?"alex":"default";
+                this.model=model.equalsIgnoreCase("slim")?"slim":"default";
         }
     }
     

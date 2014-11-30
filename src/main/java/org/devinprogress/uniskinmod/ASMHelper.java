@@ -102,4 +102,17 @@ public class ASMHelper {
         mn.instructions.insertBefore(n, new MethodInsnNode(Opcodes.INVOKESTATIC,
                 targetClass.replace('.', '/'), targetMethod, desc,false));
     }
+    public static AbstractInsnNode getNthALOAD(MethodNode mn,int index,int val){
+        AbstractInsnNode n=mn.instructions.getFirst();
+        int count=0;
+        while(n!=null){
+            if(n.getOpcode()==Opcodes.ALOAD&&((VarInsnNode)n).var==val){
+                count++;
+                if(count==index)
+                    break;
+            }
+            n=n.getNext();
+        }
+        return n;
+    }
 }

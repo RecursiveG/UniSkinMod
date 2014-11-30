@@ -177,7 +177,7 @@ public class SkinCore implements IFMLLoadingPlugin {
             map.clear();
         if (map.containsKey(MinecraftProfileTexture.Type.CAPE)&&map.containsKey(MinecraftProfileTexture.Type.SKIN))
             return;
-        final playerSkinData data=getInstance().getPlayerData(profile.getName(),profile.getId().toString());
+        final playerSkinData data=getInstance().getPlayerData(profile.getName(), profile.getId() == null ? null :profile.getId().toString());
         if((!map.containsKey(MinecraftProfileTexture.Type.CAPE))&&(data.cape!=null)){
             map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape,null));
         }
@@ -186,7 +186,35 @@ public class SkinCore implements IFMLLoadingPlugin {
                     new HashMap<String,String>(){{put("model",data.model);}}));
         }
     }
-    
+
+    private static boolean queued=false;
+    private static Map<String,MinecraftProfileTexture> skullMap=new HashMap<String, MinecraftProfileTexture>();
+    public static void injectSkullTexture(final Map map,final GameProfile profile){
+        if(queued)return;
+        if(map.containsKey(MinecraftProfileTexture.Type.SKIN))return;
+        final String name=profile.getName();
+        //LogManager.getLogger("UniSkinMod").info("Skull Renderer Invoked for "+name);
+        if (skullMap.containsKey(name)) {
+            if(skullMap.get(name)!=null)
+                map.put(MinecraftProfileTexture.Type.SKIN, skullMap.get(name));
+            return;
+        }
+        queued=true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                LogManager.getLogger("UniSkinMod").info("SkullSkinFetchThreadStarted "+name);
+                injectTexture((HashMap) map, profile);
+                if(map.containsKey(MinecraftProfileTexture.Type.SKIN))
+                    skullMap.put(name,(MinecraftProfileTexture)map.get(MinecraftProfileTexture.Type.SKIN));
+                else
+                    skullMap.put(name,null);
+                queued=false;
+                LogManager.getLogger("UniSkinMod").info("SkullSkinFetchThreadEnded "+name);
+            }
+        },"FetchSkullSkinThread").start();
+    }
+
     public playerSkinData getPlayerData(String name,String uuid){
         String skinURL=testURLs(name,SkinURLs);
         String capeURL=testURLs(name,CapeURLs);

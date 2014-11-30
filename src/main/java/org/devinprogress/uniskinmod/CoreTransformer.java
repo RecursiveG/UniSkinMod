@@ -45,6 +45,7 @@ public class CoreTransformer implements IClassTransformer {
         asm.hookMethod("net.minecraft.client.resources.SkinManager$3",        "run",         "run",          "()V",                 "injectCode");
         asm.hookMethod("net.minecraft.client.renderer.ImageBufferDownload",   "func_78433_b","setAreaOpaque","(IIII)V",             "noOpaque");
         asm.hookMethod("com.mojang.authlib.minecraft.MinecraftProfileTexture","getHash",     "getHash",      "()Ljava/lang/String;","newHash");
+        asm.hookMethod("net.minecraft.client.renderer.tileentity.TileEntitySkullRenderer","func_180543_a","renderSkull","(FFFLnet/minecraft/util/EnumFacing;FILcom/mojang/authlib/GameProfile;I)V","hijackSkullRenderer");
     }
 
     public static void injectCode(MethodNode mn){
@@ -78,6 +79,15 @@ public class CoreTransformer implements IClassTransformer {
         mn.maxStack=1;
     }
 
+    public static void hijackSkullRenderer(MethodNode mn){
+        //Insert before first ALOAD 12
+        //map @ LocalVar 12
+        //gameProfile @ LocalVar 7
+        AbstractInsnNode n=ASMHelper.getNthALOAD(mn,1,12);
+        mn.instructions.insertBefore(n,new VarInsnNode(Opcodes.ALOAD,12));
+        mn.instructions.insertBefore(n,new VarInsnNode(Opcodes.ALOAD,7));
+        ASMHelper.InsertInvokeStaticBefore(mn,n,"org.devinprogress.uniskinmod.SkinCore","injectSkullTexture","(Ljava/util/Map;Lcom/mojang/authlib/GameProfile;)V");
+    }
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] bytes) {
         return asm.transform(name,transformedName,bytes);

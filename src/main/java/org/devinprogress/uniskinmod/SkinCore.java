@@ -8,6 +8,7 @@ import java.util.*;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -38,6 +39,7 @@ public class SkinCore implements IFMLLoadingPlugin {
     private static SkinCore instance=null;
     private List<String> SkinURLs=new ArrayList<String>();
     private List<String> CapeURLs =new ArrayList<String>();
+    private List<String> RootURLs =new ArrayList<String>();
     private static final String CFG_VER_STR="Version: 1";
     private static String SkinCachePath="";
 
@@ -146,6 +148,10 @@ public class SkinCore implements IFMLLoadingPlugin {
                     CapeURLs.add(theLine.substring(6).trim());
                 }else if(theLine.startsWith("Skin: ")) {
                     SkinURLs.add(theLine.substring(6).trim());
+                }else if(theLine.startsWith("Root: ")){
+                    RootURLs.add(theLine.substring(6).trim());
+                }else{
+                    LogManager.getLogger("UniSkinMod").warn("Unable to parse line: "+theLine);
                 }
             }
             br.close();
@@ -156,34 +162,15 @@ public class SkinCore implements IFMLLoadingPlugin {
         }
     }
 
-    private class playerSkinData{
-        public String skin,cape,model;
-        public playerSkinData(String skinURL,String capeURL,String model){
-            skin=skinURL;
-            cape=capeURL;
+    private class PlayerSkinData{
+        public final String skin,cape,model;
+        public PlayerSkinData(String skinURL,String capeURL,String model){
+            skin=skinURL==null||skinURL.length()==0?null:skinURL;
+            cape=capeURL==null||capeURL.length()==0?null:capeURL;
             if(model==null)
                 this.model="default";
             else
                 this.model=model.equalsIgnoreCase("slim")?"slim":"default";
-        }
-    }
-    
-    public static void injectTexture(HashMap map,GameProfile profile){
-        LogManager.getLogger("UniSkinMod").info("Preparing skins for Player: " + profile.getName());
-        //log(map.containsKey(MinecraftProfileTexture.Type.CAPE)?"Contain Cape":"No Cape");
-        //log(map.containsKey(MinecraftProfileTexture.Type.SKIN)?"Contain Skin":"No Skin");
-
-        if(System.getProperty("uniskinmod.forceCustomServers","false").equals("true"))
-            map.clear();
-        if (map.containsKey(MinecraftProfileTexture.Type.CAPE)&&map.containsKey(MinecraftProfileTexture.Type.SKIN))
-            return;
-        final playerSkinData data=getInstance().getPlayerData(profile.getName(), profile.getId() == null ? null :profile.getId().toString());
-        if((!map.containsKey(MinecraftProfileTexture.Type.CAPE))&&(data.cape!=null)){
-            map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape,null));
-        }
-        if((!map.containsKey(MinecraftProfileTexture.Type.SKIN))&&(data.skin!=null)){
-            map.put(MinecraftProfileTexture.Type.SKIN,new MinecraftProfileTexture(data.skin,
-                    new HashMap<String,String>(){{put("model",data.model);}}));
         }
     }
 
@@ -215,12 +202,47 @@ public class SkinCore implements IFMLLoadingPlugin {
         },"FetchSkullSkinThread").start();
     }
 
-    public playerSkinData getPlayerData(String name,String uuid){
-        String skinURL=testURLs(name,SkinURLs);
-        String capeURL=testURLs(name,CapeURLs);
-        String model="default";
-        return new playerSkinData(skinURL,capeURL,model);
+    public static void injectTexture(HashMap map,GameProfile profile){
+        LogManager.getLogger("UniSkinMod").info(String.format("Fetching Skin Info for Player: %s(%s)",
+                profile.getName(),profile.getId()));
+        if (System.getProperty("uniskinmod.forceCustomServers","false").equals("true")) map.clear();
+        boolean missingSkin=!map.containsKey(MinecraftProfileTexture.Type.SKIN);
+        boolean missingCape=!map.containsKey(MinecraftProfileTexture.Type.CAPE);
+        if(missingCape||missingSkin){
+            final PlayerSkinData data=getInstance().getPlayerData(profile.getName(),profile.getId().toString());
+            if(missingCape && data.cape!=null){
+                map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape,null));
+            }
+            if(missingSkin && data.skin!=null){
+                map.put(MinecraftProfileTexture.Type.SKIN,new MinecraftProfileTexture(data.skin,
+                        new HashMap<String,String>(){{put("model",data.model);}}));
+            }
+        }
     }
+    
+    public PlayerSkinData getPlayerData(String name,String uuid){
+        String skinURL=null,capeURL=null,model=null;
+        for(String RootURL:RootURLs){
+            UniSkinApiProfile prof=UniSkinApiProfile.getProfile(name,uuid,RootURL);
+            if(prof==null)continue;
+            if(skinURL==null){
+                skinURL=prof.getSkinURL();
+                model=prof.getModel();
+            }
+            if(capeURL==null){
+                capeURL=prof.getCapeURL();
+            }
+            if(capeURL!=null&&skinURL!=null)
+                break;
+        }
+        if(skinURL==null){
+            skinURL=testURLs(name,SkinURLs);
+            model="default";
+        }
+        if(capeURL==null)capeURL=testURLs(name,CapeURLs);
+        return new PlayerSkinData(skinURL,capeURL,model);
+    }
+
 
     private String testURLs(String playerName,List<String> templates){
         //log("Test for player: "+playerName);
@@ -230,7 +252,7 @@ public class SkinCore implements IFMLLoadingPlugin {
             int rspCode=0;
             try {
                 URL url = new URL(link);
-                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                HttpURLConnection conn = (HttpURLConnection)url.openConnection(Minecraft.getMinecraft().getProxy());
                 conn.setDoOutput(false);
                 conn.setConnectTimeout(1000 * 5);
                 conn.setInstanceFollowRedirects(true);

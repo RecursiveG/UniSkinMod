@@ -149,7 +149,9 @@ public class SkinCore implements IFMLLoadingPlugin {
                 }else if(theLine.startsWith("Skin: ")) {
                     SkinURLs.add(theLine.substring(6).trim());
                 }else if(theLine.startsWith("Root: ")){
-                    RootURLs.add(theLine.substring(6).trim());
+                    theLine=theLine.substring(6).trim();
+                    if(!theLine.endsWith("/"))theLine+="/";
+                    RootURLs.add(theLine);
                 }else{
                     LogManager.getLogger("UniSkinMod").warn("Unable to parse line: "+theLine);
                 }

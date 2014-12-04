@@ -70,7 +70,7 @@ public class UniSkinApiProfile {
             }
         }
         if(json.cape!=null&&json.cape.length()>3){
-            cape=json.cape;
+            cape=String.format("%stextures/%s",Root,json.cape);
             hasProfile=true;
         }
     }

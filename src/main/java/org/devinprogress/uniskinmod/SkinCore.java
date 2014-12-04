@@ -211,7 +211,7 @@ public class SkinCore implements IFMLLoadingPlugin {
         boolean missingSkin=!map.containsKey(MinecraftProfileTexture.Type.SKIN);
         boolean missingCape=!map.containsKey(MinecraftProfileTexture.Type.CAPE);
         if(missingCape||missingSkin){
-            final PlayerSkinData data=getInstance().getPlayerData(profile.getName(),profile.getId().toString());
+            final PlayerSkinData data=getInstance().getPlayerData(profile.getName(), profile.getId() == null ? null :profile.getId().toString());
             if(missingCape && data.cape!=null){
                 map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape,null));
             }

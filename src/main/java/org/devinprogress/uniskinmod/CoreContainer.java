@@ -33,7 +33,7 @@ public class CoreContainer extends DummyModContainer {
         ModMetadata meta = getMetadata();
         meta.modId = "uniskinmod";
         meta.name = "Universal Skin Mod";
-        meta.version = "1.2-dev4";
+        meta.version = "1.3-dev1";
         meta.authorList = Arrays.asList("RecursiveG");
         meta.description = "A Coremod provided the ability to access to many skin servers.";
         meta.url = "https://github.com/RecursiveG/UniSkinMod";

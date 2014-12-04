@@ -17,22 +17,21 @@ buildscript {
 
 apply plugin: 'forge'
 
-version = "1.2-dev4"
+version = "1.3-dev1"
 group= "org.devinprogress.uniskinmod" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "UniSkinMod-1.8"
 
 minecraft {
-    version = "1.8-11.14.0.1239-1.8"
+    version = "1.8-11.14.0.1252-1.8"
     runDir = "eclipse"
-    mappings = "snapshot_20141127"
+    mappings = "snapshot_nodoc_20141130"
 }
 
-jar
-        {
-            manifest {
-                attributes 'FMLCorePlugin': 'org.devinprogress.uniskinmod.SkinCore'
-            }
-        }
+jar {
+    manifest {
+        attributes 'FMLCorePlugin': 'org.devinprogress.uniskinmod.SkinCore'
+    }
+}
 
 
 dependencies {

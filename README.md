@@ -1,13 +1,16 @@
 ### Universal Skin Mod
 This is a mod for Minecraft, allowing players to select any "SkinServer" they like.
-Latest version is v1.2-dev3 for Minecraft 1.7.10
+Latest version is v1.3-dev1 for Minecraft 1.8
 
-### Features (1.7.10-v1.2-dev3)
+### Features
 
 - Unlimited number of custom URLs
-- Transparent pixels allowed
 - HD skins supported via Optifine
-- Auto cache clean
+- Transparent pixels allowed (v1.2-dev2)
+- Auto cache clean (v1.2-dev3)
+- Smart cache clean (v1.2-dev4)
+- Skull support (v1.2-dev4)
+- UniSkinAPI support (v1.3-dev1)
 
 ### Configure
 

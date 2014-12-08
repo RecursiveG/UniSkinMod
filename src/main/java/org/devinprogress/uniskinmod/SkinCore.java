@@ -41,6 +41,7 @@ public class SkinCore implements IFMLLoadingPlugin{
     private List<String> SkinURLs=new ArrayList<String>();
     private List<String> CapeURLs =new ArrayList<String>();
     private static final String CFG_VER_STR="Version: 1";
+    private static String SkinCachePath="";
 
     public SkinCore(){
         if(instance!=null)
@@ -75,7 +76,7 @@ public class SkinCore implements IFMLLoadingPlugin{
 
     @Override
     public void injectData(Map<String, Object> data) {
-        LogManager.getLogger("UniSkinMod").warn("Injecting Data ...");
+        LogManager.getLogger("UniSkinMod").info("Injecting Data ...");
         ObfuscatedEnv=(Boolean)data.get("runtimeDeobfuscationEnabled");
         String cfgPath=((File) data.get("mcLocation")).getAbsolutePath()
                 + File.separatorChar + "config" + File.separatorChar
@@ -83,10 +84,11 @@ public class SkinCore implements IFMLLoadingPlugin{
         updateCfg(cfgPath);
         loadCfg(cfgPath);
 
-        if(System.getProperty("uniskinmod.cleanup","true").equals("true")){
-            File skin_dir=new File(((File) data.get("mcLocation")).getAbsolutePath()
-                    + File.separatorChar + "assets" + File.separatorChar
-                    + "skins");
+        SkinCachePath=((File) data.get("mcLocation")).getAbsolutePath()
+                + File.separatorChar + "assets" + File.separatorChar
+                + "skins";
+        if(System.getProperty("uniskinmod.forceCleanUp","false").equals("true")){
+            File skin_dir=new File(SkinCachePath);
             try {
                 FileUtils.deleteDirectory(skin_dir);
                 LogManager.getLogger("UniSkinMod").info("Skin cache cleaned.");
@@ -193,9 +195,10 @@ public class SkinCore implements IFMLLoadingPlugin{
 
     private String testURLs(String playerName,List<String> templates){
         //log("Test for player: "+playerName);
+        String CachedLink=null;
         for (String s:templates){
             String link=String.format(s,playerName);
-            boolean success=false;
+            int rspCode=0;
             try {
                 URL url = new URL(link);
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
@@ -203,16 +206,48 @@ public class SkinCore implements IFMLLoadingPlugin{
                 conn.setConnectTimeout(1000 * 5);
                 conn.setInstanceFollowRedirects(true);
                 conn.connect();
-                int rspCode=conn.getResponseCode();
+                rspCode=conn.getResponseCode();
                 conn.disconnect();
-                success=rspCode==200;
             } catch (IOException e) {
+                rspCode=-1;
                 //e.printStackTrace();
             }
-            if(success)return link;
+            //LogManager.getLogger("UniSkinMod").info(String.format("HTTP Return Code: %d  @%s",rspCode,link));
+            if(rspCode==404)
+                cleanCache(link);
+            if(rspCode==200){
+                cleanCache(link);
+                return link;
+            }else if(CachedLink==null&&cacheExists(link))
+                CachedLink=link;
         }
-        return null;
+        return CachedLink;
     }
+
+    private static boolean cacheExists(String link){
+        String hash=getHashForTexture(link);
+        String domain=hash.substring(0, 2);
+        File t=new File(SkinCachePath+File.separator+domain+File.separator+hash);
+        return t.exists();
+    }
+
+    private static void cleanCache(String link){
+        String hash=getHashForTexture(link);
+        String domain=hash.substring(0, 2);
+        File t=new File(SkinCachePath+File.separator+domain+File.separator+hash);
+        if(t.exists()) {
+            if (t.delete()) {
+                //LogManager.getLogger("UniSkinMod").info("Delete success: " + link);
+            }else{
+                LogManager.getLogger("UniSkinMod").warn("Failed to delete cache: " + link);
+            }
+        }
+    }
+
+    public static String getHashForTexture(String url){
+        return SHA1SUM(url);
+    }
+
 
     public static String SHA1SUM(String str){
         try{

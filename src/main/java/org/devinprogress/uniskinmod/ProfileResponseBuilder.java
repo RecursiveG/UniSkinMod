@@ -109,25 +109,29 @@ public class ProfileResponseBuilder {
 
                 if (!this.payload.textures.containsKey(MinecraftProfileTexture.Type.CAPE)) {
                     if (obj.cape!=null){
+                        String cape_url=URL_TEXTURE_FMT.replace("{root}",root).
+                                replace("{texture_hash}",obj.cape);
                         this.payload.textures.put(MinecraftProfileTexture.Type.CAPE,
-                                new MinecraftProfileTexture(URL_TEXTURE_FMT.replace("{root}",root).
-                                        replace("{texture_hash}",obj.cape),null));
+                                new MinecraftProfileTexture(cape_url,null));
                         modified=true;
-                        UniSkinMod.log.info(String.format("New cape url from %s for player %s added: %s",root,this.name,obj.cape));
+                        UniSkinMod.log.info(String.format("New cape url from %s for player %s added: %s",root,this.name,cape_url));
                     }
                 }
 
                 if (!this.payload.textures.containsKey(MinecraftProfileTexture.Type.SKIN)) {
-                    if (obj.skins!=null&&obj.model_preference!=null&&obj.model_preference.size()>0&&
-                            obj.skins.containsKey(obj.model_preference.get(0))){
-                        boolean slimModel=obj.model_preference.get(0).equalsIgnoreCase("slim");
-                        this.payload.textures.put(MinecraftProfileTexture.Type.SKIN,
-                                new MinecraftProfileTexture(URL_TEXTURE_FMT.replace("{root}",root).
-                                        replace("{texture_hash}", obj.skins.get(obj.model_preference.get(0))),
-                                        slimModel?new HashMap<String, String>(){{put("model","slim");}}:null));
-                        modified=true;
-                        UniSkinMod.log.info(String.format("New %s skin url from %s for player %s added: %s",
-                                obj.model_preference.get(0),root,this.name,obj.skins.get(obj.model_preference.get(0))));
+                    if (obj.skins!=null&&obj.model_preference!=null&&obj.model_preference.size()>0){
+                        for(String model:obj.model_preference) {
+                            if (obj.skins.containsKey(model) && obj.skins.get(model)!=null && obj.skins.get(model).length()>0){
+                                boolean slimModel=model.equalsIgnoreCase("slim");
+                                String skin_url=URL_TEXTURE_FMT.replace("{root}",root).replace("{texture_hash}", obj.skins.get(model));
+                                this.payload.textures.put(MinecraftProfileTexture.Type.SKIN,
+                                        new MinecraftProfileTexture(skin_url,slimModel?
+                                                new HashMap<String, String>(){{put("model","slim");}}:null));
+                                modified=true;
+                                UniSkinMod.log.info(String.format("New %s skin url from %s for player %s added: %s",
+                                        model,root,this.name,skin_url));
+                            }
+                        }
                     }
                 }
 

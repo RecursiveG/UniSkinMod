@@ -17,37 +17,23 @@ buildscript {
 
 apply plugin: 'forge'
 
-version = "1.2-dev3"
-group= "org.devinprogress.uniskinmod" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "UniSkinMod-1.7.10"
+version = "1.3-dev2"
+group= "org.devinprogress.uniskinmod"
+archivesBaseName = "UniSkinMod-1.8"
 
 minecraft {
-    version = "1.7.10-10.13.2.1230"
-    mappings = 'stable_12'
+    version = "1.8-11.14.1.1334"
     runDir = "eclipse"
+    mappings = "stable_16"
 }
 
-jar
-        {
-            manifest {
-                attributes 'FMLCorePlugin': 'org.devinprogress.uniskinmod.SkinCore'
-            }
-        }
-
+jar {
+    manifest {
+        attributes 'FMLCorePlugin': 'org.devinprogress.uniskinmod.Loader'
+    }
+}
 
 dependencies {
-    // you may put jars on which you depend on in ./libs
-    // or you may define them like so..
-    //compile "some.group:artifact:version:classifier"
-    //compile "some.group:artifact:version"
-      
-    // real examples
-    //compile 'com.mod-buildcraft:buildcraft:6.0.8:dev'  // adds buildcraft to the dev env
-    //compile 'com.googlecode.efficient-java-matrix-library:ejml:0.24' // adds ejml to the dev env
-
-    // for more info...
-    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
-    // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
 }
 

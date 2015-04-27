@@ -22,7 +22,7 @@ group= "org.devinprogress.uniskinmod"
 archivesBaseName = "UniSkinMod-1.8"
 
 minecraft {
-    version = "1.8-11.14.1.1334"
+    version = "1.8-11.14.1.1397"
     runDir = "eclipse"
     mappings = "stable_16"
 }

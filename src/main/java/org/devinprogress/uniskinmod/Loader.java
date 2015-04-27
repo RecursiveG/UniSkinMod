@@ -44,10 +44,13 @@ public class Loader implements IFMLLoadingPlugin {
                 bw.write("# Line starts with 'Root: ' indicates a server");bw.newLine();
                 bw.write("# All servers will be queried in that order.");bw.newLine();
                 bw.write("# Server in front has higher priority");bw.newLine();
-                bw.write("# Official server has the highest priority");bw.newLine();
+                bw.write("# Official server has the lowest priority");bw.newLine();
                 bw.write("# No more legacy style link support!");bw.newLine();
                 bw.write("# An Example:");bw.newLine();
                 bw.write("# Root: http://127.0.0.1:25566/skins");bw.newLine();
+                bw.newLine();
+                bw.write("# SkinMe Default");bw.newLine();
+                bw.write("Root: http://www.skinme.cc/uniskin");bw.newLine();
                 bw.flush();bw.close();fw.close();
             }
 

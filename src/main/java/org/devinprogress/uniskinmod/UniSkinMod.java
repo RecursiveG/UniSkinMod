@@ -1,17 +1,30 @@
 package org.devinprogress.uniskinmod;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheStats;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.authlib.yggdrasil.response.MinecraftProfilePropertiesResponse;
+import com.mojang.authlib.yggdrasil.response.MinecraftTexturesPayload;
 import com.mojang.authlib.yggdrasil.response.ProfileSearchResultsResponse;
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This file is part of Universal Skin Mod,
@@ -40,6 +53,47 @@ public class UniSkinMod {
         }catch(Exception ex){
             profilesFieldAccessor=null;
         }
+    }
+
+    private static Cache<String, Property> cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
+
+
+    /** Hijack the constructor of NetworkPlayerInfo & Skull renderer*/
+    public static GameProfile fillGameProfile(final GameProfile gameProfileIn) {
+        //if (cache.getIfPresent(gameProfileIn)!=null) return gameProfileIn;
+        if (gameProfileIn==null) return null;
+        final String player_name=gameProfileIn.getName();
+
+        Property finalP=null;
+        try {
+            finalP = cache.get(player_name, new Callable<Property>() {
+                @Override
+                public Property call() throws Exception {
+                    log.info("Filling profile for player: "+player_name);
+                    Property textureProperty = (Property) Iterables.getFirst(gameProfileIn.getProperties().get("textures"), (Object) null);
+                    MojangTexturePayload payload = MojangTexturePayload.fromProperty(textureProperty);
+                    if (payload==null) payload=new MojangTexturePayload(player_name);
+
+                    for (String root : roots) {
+                        if (payload.isComplete()) break;
+                        UniSkinApiProfile api=UniSkinApiProfile.getProfile(player_name,root);
+                        if (api==null) continue;
+                        payload.addCape(api.getCapeURL());
+                        payload.addSkin(api.getSkinURL(),api.getModel());
+                    }
+
+                    return payload.toProperty();
+                }
+            });
+        }catch(Exception ex){
+            ex.printStackTrace();
+            return gameProfileIn;
+        }
+
+        gameProfileIn.getProperties().removeAll("textures");
+        gameProfileIn.getProperties().put("textures", finalP);
+        //cache.put(gameProfileIn,gameProfileIn);
+        return gameProfileIn;
     }
 
     public static ProfileSearchResultsResponse fillMissionProfile(ProfileSearchResultsResponse response, List<String> request){

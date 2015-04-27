@@ -5,10 +5,8 @@ import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRema
 import net.minecraftforge.fml.relauncher.FMLRelaunchLog;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -89,6 +87,21 @@ public abstract class BaseAsmTransformer implements IClassTransformer{
         while(n!=null)
             if (n instanceof LabelNode)
                 return (LabelNode)n;
+        return null;
+    }
+
+    protected static AbstractInsnNode getInsnPutField(MethodNode mn, String fieldName, int count){
+        AbstractInsnNode n=mn.instructions.getFirst();
+        int idx=0;
+        while(n!=null){
+            if (n instanceof FieldInsnNode) {
+                FieldInsnNode tmp=(FieldInsnNode)n;
+                if (tmp.getOpcode()== Opcodes.PUTFIELD && tmp.name.equals(fieldName))
+                    if (++idx==count)
+                        return n;
+            }
+            n=n.getNext();
+        }
         return null;
     }
 }

@@ -1,12 +1,7 @@
 package org.devinprogress.uniskinmod;
 
 import com.google.common.base.Charsets;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.gson.Gson;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import org.apache.commons.io.IOUtils;
 
@@ -15,11 +10,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-/**
- * Created by recursiveg on 15-4-26.
- */
+/** Universal Skin API */
 public class UniSkinApiProfile {
 
     private class ProfileJSON{
@@ -74,14 +66,14 @@ public class UniSkinApiProfile {
                 model=m;
                 skin=URL_TEXTURE_FMT.replace("{root}",root).replace("{texture_hash}",json.skins.get(m));
                 hasProfile=true;
-                UniSkinMod.log.info("Player Skin Selected: %s %s %s",name,model,json.skins.get(m));
+                UniSkinMod.log.info(String.format("Player Skin Selected: %s %s %s",name,model,json.skins.get(m)));
                 break;
             }
         }
         if(json.cape!=null&&json.cape.length()>3){
             cape=URL_TEXTURE_FMT.replace("{root}",root).replace("{texture_hash}",json.cape);
             hasProfile=true;
-            UniSkinMod.log.info("Player Cape Selected: %s %s",name,json.cape);
+            UniSkinMod.log.info(String.format("Player Cape Selected: %s %s",name,json.cape));
         }
         update=json.last_update;
     }

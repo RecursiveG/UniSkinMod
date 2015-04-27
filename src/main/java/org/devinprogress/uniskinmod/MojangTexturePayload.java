@@ -27,7 +27,7 @@ public class MojangTexturePayload {
     public MojangTexturePayload(String playerName){
         isPublic=true;
         profileName=playerName;
-        profileId=UniSkinMod.getOfflineUUID(playerName);
+        profileId= getOfflineUUID(playerName);
         textures=new HashMap<MinecraftProfileTexture.Type, MinecraftProfileTexture>();
 
     }
@@ -37,6 +37,10 @@ public class MojangTexturePayload {
         if (!property.getName().equalsIgnoreCase("textures")) return null;
         String e = new String(Base64.decodeBase64(property.getValue()), Charsets.UTF_8);
         return gson.fromJson(e, MojangTexturePayload.class);
+    }
+
+    public static UUID getOfflineUUID(String name){
+        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(Charsets.UTF_8));
     }
 
     public Property toProperty(){

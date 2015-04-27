@@ -42,25 +42,13 @@ import java.util.concurrent.TimeUnit;
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 public class UniSkinMod {
-    private static Field profilesFieldAccessor;
     public static final Logger log= LogManager.getLogger("UniSkinMod");
     public static final List<String> roots=new ArrayList<String>();
-
-    static{
-        try{
-            profilesFieldAccessor=ProfileSearchResultsResponse.class.getDeclaredField("profiles");
-            profilesFieldAccessor.setAccessible(true);
-        }catch(Exception ex){
-            profilesFieldAccessor=null;
-        }
-    }
-
     private static Cache<String, Property> cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
 
 
-    /** Hijack the constructor of NetworkPlayerInfo & Skull renderer*/
+    /** Hijack the GameProfile in NetworkPlayerInfo & Skull renderer*/
     public static GameProfile fillGameProfile(final GameProfile gameProfileIn) {
-        //if (cache.getIfPresent(gameProfileIn)!=null) return gameProfileIn;
         if (gameProfileIn==null) return null;
         final String player_name=gameProfileIn.getName();
 
@@ -92,60 +80,7 @@ public class UniSkinMod {
 
         gameProfileIn.getProperties().removeAll("textures");
         gameProfileIn.getProperties().put("textures", finalP);
-        //cache.put(gameProfileIn,gameProfileIn);
         return gameProfileIn;
     }
 
-    public static ProfileSearchResultsResponse fillMissionProfile(ProfileSearchResultsResponse response, List<String> request){
-        if(response.getProfiles().length<request.size()){
-            List<GameProfile> profs=new ArrayList<GameProfile>();
-            try{
-                profs.addAll(Arrays.asList((GameProfile[]) profilesFieldAccessor.get(response)));
-
-                for (String name : request) {
-                    boolean ok=false;
-                    for (GameProfile prof:profs) {
-                        if (name.equalsIgnoreCase(prof.getName())) {
-                            ok=true; break;
-                        }
-                    }
-                    if (!ok) {
-                        UUID uuid=getOfflineUUID(name);
-                        profs.add(new GameProfile(uuid, name));
-                        log.info(String.format("Player: %s has no uuid, assigning: %s",name,uuid.toString()));
-                    }
-                }
-
-                GameProfile[] tmp=new GameProfile[profs.size()];
-                for(int i=0;i<tmp.length;i++)
-                    tmp[i]=profs.get(i);
-                profilesFieldAccessor.set(response,tmp);
-            }catch(Exception ex){
-                ex.printStackTrace();
-                return response;
-            }
-        }
-        return response;
-    }
-
-    public static boolean isOnlinePlayer(GameProfile p){
-        if (p.getName()==null) return true;
-        if (p.getId().equals(getOfflineUUID(p.getName()))||
-                p.getId().equals(getOfflineUUID(p.getName().toLowerCase()))) {
-            log.info(String.format("Player: %s is in offline-mode.",p.getName()));
-            return false;
-        }
-        log.info(String.format("Player: %s is in online-mode.",p.getName()));
-        return true;
-    }
-
-    public static MinecraftProfilePropertiesResponse fillResponse(GameProfile p, MinecraftProfilePropertiesResponse orig){
-        log.info(String.format("Fetching External Profile: %s.%s",p.getName(),orig==null?" Origin Response is NULL.":""));
-        ProfileResponseBuilder builder=new ProfileResponseBuilder(orig,p.getName());
-        return builder.getFilledResponse(roots);
-    }
-
-    public static UUID getOfflineUUID(String name){
-        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(Charsets.UTF_8));
-    }
 }

@@ -2,28 +2,14 @@ package org.devinprogress.uniskinmod;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheStats;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.properties.Property;
-import com.mojang.authlib.properties.PropertyMap;
-import com.mojang.authlib.yggdrasil.response.MinecraftProfilePropertiesResponse;
-import com.mojang.authlib.yggdrasil.response.MinecraftTexturesPayload;
-import com.mojang.authlib.yggdrasil.response.ProfileSearchResultsResponse;
-import org.apache.commons.codec.Charsets;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,7 +31,6 @@ public class UniSkinMod {
     public static final Logger log= LogManager.getLogger("UniSkinMod");
     public static final List<String> roots=new ArrayList<String>();
     private static Cache<String, Property> cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
-
 
     /** Hijack the GameProfile in NetworkPlayerInfo & Skull renderer*/
     public static GameProfile fillGameProfile(final GameProfile gameProfileIn) {
@@ -82,5 +67,4 @@ public class UniSkinMod {
         gameProfileIn.getProperties().put("textures", finalP);
         return gameProfileIn;
     }
-
 }

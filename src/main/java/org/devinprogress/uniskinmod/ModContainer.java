@@ -14,7 +14,7 @@ public class ModContainer extends DummyModContainer{
         ModMetadata meta = getMetadata();
         meta.modId = "uniskinmod";
         meta.name = "UniSkinMod";
-        meta.version = "1.3-dev2";
+        meta.version = "1.3-dev3";
         meta.authorList = Arrays.asList("RecursiveG");
         meta.description = "This mod makes it possible to load skins & capes from servers besides the official one.";
         meta.url = "https://github.com/RecursiveG/UniSkinMod";

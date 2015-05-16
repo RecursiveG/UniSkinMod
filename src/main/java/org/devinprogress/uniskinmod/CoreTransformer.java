@@ -44,7 +44,7 @@ public class CoreTransformer implements IClassTransformer {
         asm=new ASMHelper(this);
         asm.hookMethod("net.minecraft.client.resources.SkinManager$3",        "run",         "run",          "()V",                 "injectCode");
         asm.hookMethod("net.minecraft.client.renderer.ImageBufferDownload",   "func_78433_b","setAreaOpaque","(IIII)V",             "noOpaque");
-        asm.hookMethod("com.mojang.authlib.minecraft.MinecraftProfileTexture","getHash",     "getHash",      "()Ljava/lang/String;","newHash");
+        //asm.hookMethod("com.mojang.authlib.minecraft.MinecraftProfileTexture","getHash",     "getHash",      "()Ljava/lang/String;","newHash");
     }
 
     public static void injectCode(MethodNode mn){

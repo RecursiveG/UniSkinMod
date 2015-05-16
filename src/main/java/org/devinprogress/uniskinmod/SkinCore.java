@@ -8,7 +8,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
@@ -38,9 +42,8 @@ import org.apache.logging.log4j.LogManager;
 public class SkinCore implements IFMLLoadingPlugin{
     public static boolean ObfuscatedEnv=true;
     private static SkinCore instance=null;
-    private List<String> SkinURLs=new ArrayList<String>();
-    private List<String> CapeURLs =new ArrayList<String>();
-    private static final String CFG_VER_STR="Version: 1";
+    private List<String> RootURLs =new ArrayList<String>();
+    private static final String CFG_VER_STR="Version: 2";
     private static String SkinCachePath="";
 
     public SkinCore(){
@@ -123,10 +126,17 @@ public class SkinCore implements IFMLLoadingPlugin{
                 bw.write(CFG_VER_STR);bw.newLine();
                 bw.write("#Do not edit the line above");bw.newLine();
                 bw.write("#请勿随意修改以上两行");bw.newLine();
-                bw.write("Skin: http://www.skinme.cc/MinecraftSkins/%s.png");bw.newLine();
-                bw.write("Cape: http://www.skinme.cc/MinecraftCloaks/%s.png");bw.newLine();
-                bw.write("Skin: http://skins.minecraft.net/MinecraftSkins/%s.png");bw.newLine();
-                bw.write("Cape: http://skins.minecraft.net/MinecraftCloaks/%s.png");bw.newLine();
+                bw.write("# Line starts with '#' is a commit line");bw.newLine();
+                bw.write("# Line starts with 'Root: ' indicates a server");bw.newLine();
+                bw.write("# All servers will be queried in that order.");bw.newLine();
+                bw.write("# Server in front has higher priority");bw.newLine();
+                bw.write("# Official server has the lowest priority");bw.newLine();
+                bw.write("# No more legacy style link support!");bw.newLine();
+                bw.write("# An Example:");bw.newLine();
+                bw.write("# Root: http://127.0.0.1:25566/skins");bw.newLine();
+                bw.newLine();
+                bw.write("# SkinMe Default");bw.newLine();
+                bw.write("Root: http://www.skinme.cc/uniskin");bw.newLine();
                 bw.flush();bw.close();fw.close();
             }
         }catch(IOException e){
@@ -144,10 +154,8 @@ public class SkinCore implements IFMLLoadingPlugin{
                 theLine = br.readLine().trim();
                 if (theLine.startsWith("#") || theLine.equals("")) {
                     continue;
-                }else if(theLine.startsWith("Cape: ")){
-                    CapeURLs.add(theLine.substring(6).trim());
-                }else if(theLine.startsWith("Skin: ")) {
-                    SkinURLs.add(theLine.substring(6).trim());
+                }else if(theLine.startsWith("Root: ")) {
+                    RootURLs.add(theLine.substring(6).trim());
                 }
             }
             br.close();
@@ -178,6 +186,7 @@ public class SkinCore implements IFMLLoadingPlugin{
         if (map.containsKey(MinecraftProfileTexture.Type.CAPE)&&map.containsKey(MinecraftProfileTexture.Type.SKIN))
             return;
         final playerSkinData data=getInstance().getPlayerData(profile.getName(),profile.getId().toString());
+        if (data==null) return;
         if((!map.containsKey(MinecraftProfileTexture.Type.CAPE))&&(data.cape!=null)){
             map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape));
         }
@@ -185,65 +194,30 @@ public class SkinCore implements IFMLLoadingPlugin{
             map.put(MinecraftProfileTexture.Type.SKIN,new MinecraftProfileTexture(data.skin));
         }
     }
-    
-    public playerSkinData getPlayerData(String name,String uuid){
-        String skinURL=testURLs(name,SkinURLs);
-        String capeURL=testURLs(name,CapeURLs);
-        String model="default";
-        return new playerSkinData(skinURL,capeURL,model);
-    }
 
-    private String testURLs(String playerName,List<String> templates){
-        //log("Test for player: "+playerName);
-        String CachedLink=null;
-        for (String s:templates){
-            String link=String.format(s,playerName);
-            int rspCode=0;
-            try {
-                URL url = new URL(link);
-                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-                conn.setDoOutput(false);
-                conn.setConnectTimeout(1000 * 5);
-                conn.setInstanceFollowRedirects(true);
-                conn.connect();
-                rspCode=conn.getResponseCode();
-                conn.disconnect();
-            } catch (IOException e) {
-                rspCode=-1;
-                //e.printStackTrace();
-            }
-            //LogManager.getLogger("UniSkinMod").info(String.format("HTTP Return Code: %d  @%s",rspCode,link));
-            if(rspCode==404)
-                cleanCache(link);
-            if(rspCode==200){
-                cleanCache(link);
-                return link;
-            }else if(CachedLink==null&&cacheExists(link))
-                CachedLink=link;
-        }
-        return CachedLink;
-    }
-
-    private static boolean cacheExists(String link){
-        String hash=getHashForTexture(link);
-        String domain=hash.substring(0, 2);
-        File t=new File(SkinCachePath+File.separator+domain+File.separator+hash);
-        return t.exists();
-    }
-
-    private static void cleanCache(String link){
-        String hash=getHashForTexture(link);
-        String domain=hash.substring(0, 2);
-        File t=new File(SkinCachePath+File.separator+domain+File.separator+hash);
-        if(t.exists()) {
-            if (t.delete()) {
-                //LogManager.getLogger("UniSkinMod").info("Delete success: " + link);
-            }else{
-                LogManager.getLogger("UniSkinMod").warn("Failed to delete cache: " + link);
-            }
+    private static Cache<String, playerSkinData> cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
+    public playerSkinData getPlayerData(final String name,String uuid){
+        try{
+            return cache.get(name, new Callable<playerSkinData>() {
+                @Override
+                public playerSkinData call() throws Exception {
+                    String skin=null, cape=null;
+                    for (String root: RootURLs){
+                        if (skin !=null && cape!=null) break;
+                        UniSkinApiProfile api = UniSkinApiProfile.getProfile(name, root);
+                        if (api==null) continue;
+                        if (skin==null) skin = api.getSkinURL();
+                        if (cape==null) cape = api.getCapeURL();
+                    }
+                    return new playerSkinData(skin,cape,"default");
+                }
+            });
+        }catch(Exception ex){
+            ex.printStackTrace();
+            return null;
         }
     }
-
+/*
     public static String getHashForTexture(String url){
         return SHA1SUM(url);
     }
@@ -268,5 +242,5 @@ public class SkinCore implements IFMLLoadingPlugin{
             buf.append(HEX_DIGITS[ b    &0x0f]);
         }
         return buf.toString();
-    }
+    }*/
 }

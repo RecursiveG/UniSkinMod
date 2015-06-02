@@ -1,6 +1,7 @@
 package org.devinprogress.uniskinmod;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
@@ -18,6 +19,7 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
+import scala.collection.parallel.ParIterableLike;
 
 /**
  This file is part of Universal Skin Mod,
@@ -130,7 +132,7 @@ public class SkinCore implements IFMLLoadingPlugin{
                 bw.write("# Line starts with 'Root: ' indicates a server");bw.newLine();
                 bw.write("# All servers will be queried in that order.");bw.newLine();
                 bw.write("# Server in front has higher priority");bw.newLine();
-                bw.write("# Official server has the lowest priority");bw.newLine();
+                bw.write("# Official server has the highest priority");bw.newLine();
                 bw.write("# No more legacy style link support!");bw.newLine();
                 bw.write("# An Example:");bw.newLine();
                 bw.write("# Root: http://127.0.0.1:25566/skins");bw.newLine();
@@ -152,14 +154,14 @@ public class SkinCore implements IFMLLoadingPlugin{
             String theLine;
             while (br.ready()) {
                 theLine = br.readLine().trim();
-                if (theLine.startsWith("#") || theLine.equals("")) {
-                    continue;
-                }else if(theLine.startsWith("Root: ")) {
+                if(theLine.startsWith("Root: ")) {
+                    LogManager.getLogger("UniSkinMod").info("Root address added: " + theLine.substring(6).trim());
                     RootURLs.add(theLine.substring(6).trim());
+                } else if (!(theLine.startsWith("#") || theLine.equals("") || theLine.startsWith("Version:"))) {
+                    LogManager.getLogger("UniSkinMod").info("Unknown Config Line: " + theLine);
                 }
             }
-            br.close();
-            fr.close();
+            br.close(); fr.close();
         }catch(IOException e){
             LogManager.getLogger("UniSkinMod").warn("Error happened when loading configuration");
             e.printStackTrace();
@@ -176,27 +178,66 @@ public class SkinCore implements IFMLLoadingPlugin{
             else
                 this.model=model.equalsIgnoreCase("alex")?"alex":"default";
         }
+
+        @Override
+        public String toString(){
+            return String.format("{skin: %s, cape: %s, model: %s}", skin, cape, model);
+        }
     }
     
-    public static void injectTexture(HashMap map,GameProfile profile){
-        LogManager.getLogger("UniSkinMod").info("Invoked for Player: " + profile.getName());
-        //log(map.containsKey(MinecraftProfileTexture.Type.CAPE)?"Contain Cape":"No Cape");
-        //log(map.containsKey(MinecraftProfileTexture.Type.SKIN)?"Contain Skin":"No Skin");
+    public static void injectTexture(HashMap<MinecraftProfileTexture.Type, MinecraftProfileTexture> map,GameProfile profile){
+        LogManager.getLogger("UniSkinMod").info("Injecting Skin Data for Player: " + profile.getName());
 
         if (map.containsKey(MinecraftProfileTexture.Type.CAPE)&&map.containsKey(MinecraftProfileTexture.Type.SKIN))
             return;
-        final playerSkinData data=getInstance().getPlayerData(profile.getName(),profile.getId().toString());
+        final playerSkinData data=getInstance().getPlayerData(profile.getName());
         if (data==null) return;
-        if((!map.containsKey(MinecraftProfileTexture.Type.CAPE))&&(data.cape!=null)){
-            map.put(MinecraftProfileTexture.Type.CAPE,new MinecraftProfileTexture(data.cape));
+
+        if(!(map.containsKey(MinecraftProfileTexture.Type.CAPE))&&data.cape != null){
+            map.put(MinecraftProfileTexture.Type.CAPE,constructTexture(data.cape));
+            LogManager.getLogger("UniSkinMod").debug("Cape Injected");
         }
-        if((!map.containsKey(MinecraftProfileTexture.Type.SKIN))&&(data.skin!=null)){
-            map.put(MinecraftProfileTexture.Type.SKIN,new MinecraftProfileTexture(data.skin));
+        if(!(map.containsKey(MinecraftProfileTexture.Type.SKIN))&&data.skin != null){
+            map.put(MinecraftProfileTexture.Type.SKIN,constructTexture(data.skin));
+            LogManager.getLogger("UniSkinMod").debug("Skin Injected");
+        }
+    }
+
+    /** Deal with different constructor of MinecraftProfileTexture in different versions of authlib */
+    private static MinecraftProfileTexture constructTexture(String url){
+        Constructor con = null;
+        boolean legacy = false;
+        try {
+            con = MinecraftProfileTexture.class.getConstructor(String.class, Map.class);
+        }catch(NoSuchMethodException ex) {
+            legacy = true;
+        }
+
+        if(legacy){
+            try {
+                con = MinecraftProfileTexture.class.getConstructor(String.class);
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }
+
+        LogManager.getLogger("UniSkinMod").debug("Using " +(legacy ? "old" : "new")+ " constructor of authlib.");
+
+        if (con==null)return null;
+        try {
+            if (legacy) {
+                return (MinecraftProfileTexture) con.newInstance(url);
+            }else{
+                return (MinecraftProfileTexture) con.newInstance(url, null);
+            }
+        }catch (Exception ex){
+            ex.printStackTrace();
+            return null;
         }
     }
 
     private static Cache<String, playerSkinData> cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
-    public playerSkinData getPlayerData(final String name,String uuid){
+    public playerSkinData getPlayerData(final String name){
         try{
             return cache.get(name, new Callable<playerSkinData>() {
                 @Override
@@ -217,30 +258,4 @@ public class SkinCore implements IFMLLoadingPlugin{
             return null;
         }
     }
-/*
-    public static String getHashForTexture(String url){
-        return SHA1SUM(url);
-    }
-
-
-    public static String SHA1SUM(String str){
-        try{
-            MessageDigest messageDigest = MessageDigest.getInstance("SHA1");
-            messageDigest.update(str.getBytes());
-            return toHex(messageDigest.digest());
-        }catch(Exception e){
-            e.printStackTrace();
-            return "MissingTexture";
-        }        
-    }
-
-    private static final char[] HEX_DIGITS = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
-    private static String toHex(byte[] bytes) {
-        StringBuilder buf = new StringBuilder(bytes.length*2);
-        for(byte b:bytes){
-            buf.append(HEX_DIGITS[(b>>4)&0x0f]);
-            buf.append(HEX_DIGITS[ b    &0x0f]);
-        }
-        return buf.toString();
-    }*/
 }

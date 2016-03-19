@@ -1,0 +1,10 @@
+{
+  "modid": "uniskinmod",
+  "name": "Universal Skin Mod",
+  "description": "Allowing players to load 3rd party skin, cape and elytra textures.",
+  "version": "",
+  "credits": "Created by RecursiveG",
+  "mcversion": "",
+  "url": "https://github.com/RecursiveG/UniSkinMod",
+  "authors": ["RecursiveG"]
+}

@@ -1,28 +1,23 @@
 ### Universal Skin Mod
 This is a mod for Minecraft, allowing players to select any "SkinServer" they like.
 
-Current version is v1.3-dev3 for Minecraft 1.8
+Current version is v1.4-alpha2 for Minecraft 1.9
 
 ### Features
 
 - Unlimited number of custom URLs
-- HD skins supported via Optifine
-- Transparent pixels allowed (v1.2-dev2)
-- Skull support (v1.2-dev4)
-- UniSkinAPI support (v1.3-dev1)
-- SkinMe added as pre-configured server (Can be removed from cfg)
-- *Legacy style link NO LONGER supported* (1.3-dev2)
+- HD skins supported via Optifine (Unconfirmed)
+- Transparent pixels allowed
+- Skull support
+- UniSkinAPI support
+- Legacy style link supported again, skin and cape only
+- Dynamic skin, cape and elytra
+- Genuine and local skin loading
 
 ### Configure
 
-- The config file is located in `config/UniSkinMod.cfg`
-- Comment lines start with `#`
-- Line starts with `Root: ` indicates a "Root" URL
-- All servers will be queried in that order.
-- Server in front has higher priority
-- Official server has the lowest priority
-- For more info about the "Root" URL, visit [UniSkinAPI Document](https://github.com/RecursiveG/UniSkinServer/blob/master/doc/UniSkinAPI_zh-CN.md) please!
-- **No more legacy style link support!**
+- The config file is located in `config/UniSkinMod/UniSkinMod.json`
+- For more info about the "Root" URL, visit [UniSkinAPI Document](https://github.com/RecursiveG/UniSkinServer/blob/master/doc/UniSkinAPI_en.md) please!
 
 ### License
 Licensed under GPLv2

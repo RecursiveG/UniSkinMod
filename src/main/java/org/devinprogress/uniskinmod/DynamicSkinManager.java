@@ -7,16 +7,22 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.SkinManager;
 import net.minecraft.util.ResourceLocation;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.Level;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class DynamicSkinManager {
     private final List<String> rootURIs;
     private final File localSkinDir;
+    private final File mcSkinCacheDir;
 
     public class CachedDynamicSkin {
         ResourceLocation[] skin = null;
@@ -33,9 +39,10 @@ public class DynamicSkinManager {
         }
     }
 
-    public DynamicSkinManager(List<String> r, File localSkin) {
+    public DynamicSkinManager(List<String> r, File localSkin, File mcCache) {
         rootURIs = r;
         localSkinDir = localSkin;
+        mcSkinCacheDir = mcCache;
     }
 
     public final LoadingCache<String, CachedDynamicSkin> cache = CacheBuilder.newBuilder()
@@ -111,23 +118,60 @@ public class DynamicSkinManager {
         if (cache.skinURL != null) {
             boolean slimModel = cache.model.equalsIgnoreCase("slim");
             for (int i = 0; i < cache.skinURL.length; i++) {
-                skinManager.loadSkin(new MinecraftProfileTexture(cache.skinURL[i], slimModel ?
-                        new HashMap<String, String>() {{
-                            put("model", "slim");
-                        }} : null), MinecraftProfileTexture.Type.SKIN);
+                String url = cache.skinURL[i];
+                if (url.startsWith("local:")) {
+                    File src = new File(url.substring(6));
+                    forceLoadTexture(src, MinecraftProfileTexture.Type.SKIN, slimModel);
+                } else {
+                    skinManager.loadSkin(new MinecraftProfileTexture(url, slimModel ?
+                            new HashMap<String, String>() {{
+                                put("model", "slim");
+                            }} : null), MinecraftProfileTexture.Type.SKIN);
+                }
             }
         }
 
         if (cache.capeURL != null) {
             for (int i = 0; i < cache.capeURL.length; i++) {
-                skinManager.loadSkin(new MinecraftProfileTexture(cache.capeURL[i], null), MinecraftProfileTexture.Type.CAPE);
+                String url = cache.capeURL[i];
+                if (url.startsWith("local:")) {
+                    forceLoadTexture(new File(url.substring(6)), MinecraftProfileTexture.Type.CAPE, false);
+                } else {
+                    skinManager.loadSkin(new MinecraftProfileTexture(url, null), MinecraftProfileTexture.Type.CAPE);
+                }
             }
         }
 
         if (cache.elytraURL != null) {
             for (int i = 0; i < cache.elytraURL.length; i++) {
-                skinManager.loadSkin(new MinecraftProfileTexture(cache.elytraURL[i], null), MinecraftProfileTexture.Type.ELYTRA);
+                String url = cache.elytraURL[i];
+                if (url.startsWith("local:")) {
+                    forceLoadTexture(new File(url.substring(6)), MinecraftProfileTexture.Type.ELYTRA, false);
+                } else {
+                    skinManager.loadSkin(new MinecraftProfileTexture(url, null), MinecraftProfileTexture.Type.ELYTRA);
+                }
             }
+        }
+    }
+
+    public void forceLoadTexture(File sourceFile, MinecraftProfileTexture.Type textureType, boolean isAlex) {
+        try {
+            File dstFolder = this.mcSkinCacheDir;
+            String sha256 = DigestUtils.sha256Hex(new FileInputStream(sourceFile)).toLowerCase();
+            String dir = sha256.substring(0, 2);
+            File subDir = new File(dstFolder, dir);
+            subDir.mkdirs();
+            File dstFile = new File(subDir, sha256);
+            FileUtils.copyFile(sourceFile, dstFile);
+            Map<String, String> metadata = (textureType == MinecraftProfileTexture.Type.SKIN && isAlex)
+                    ? new HashMap<String, String>() {{
+                put("model", "slim");
+            }} : null;
+            String url = "http://127.0.0.1/" + sha256;
+            Minecraft.getMinecraft().getSkinManager().loadSkin(
+                    new MinecraftProfileTexture(url, metadata), textureType);
+        } catch (Exception ex) {
+            UniSkinMod.log.catching(Level.WARN, ex);
         }
     }
 }

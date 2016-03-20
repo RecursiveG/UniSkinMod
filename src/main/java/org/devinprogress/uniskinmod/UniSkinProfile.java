@@ -5,6 +5,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import net.minecraft.client.Minecraft;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 
@@ -239,6 +240,7 @@ public class UniSkinProfile {
     }
 
     private UniSkinProfile(File profileFile, File textureFolder) {
+        String name = FilenameUtils.removeExtension(profileFile.getName());
         ProfileJSON json;
         try {
             json = (new Gson()).fromJson(new FileReader(profileFile), ProfileJSON.class);
@@ -250,7 +252,7 @@ public class UniSkinProfile {
         for (String m : json.model_preference) {
             if (json.skins.containsKey(m) && (m.equals("default") || m.equals("slim"))) {
                 model = m;
-                skin = new File(textureFolder, json.skins.get(m)).toURI().toString();
+                skin = "local:" + (new File(textureFolder, json.skins.get(m)).getAbsolutePath());
                 hasProfile = true;
                 UniSkinMod.log.info("Player Skin Selected: {} {} {}", name, model, json.skins.get(m));
                 break;
@@ -259,19 +261,19 @@ public class UniSkinProfile {
 
         if (json.model_preference.contains("cape") && json.skins.containsKey("cape")) {
             String tmp = json.skins.get("cape");
-            cape = new File(textureFolder, tmp).toURI().toString();
+            cape = "local:" + (new File(textureFolder, tmp).getAbsolutePath());
             hasProfile = true;
             UniSkinMod.log.info("Player Cape Selected: {} {}", name, tmp);
         }
         if (json.cape != null && json.cape.length() > 3 && cape != null) {
-            cape = new File(textureFolder, json.cape).toURI().toString();
+            cape = "local:" + (new File(textureFolder, json.cape).getAbsolutePath());
             hasProfile = true;
             UniSkinMod.log.info("Player Cape Selected: {} {}", name, json.cape);
         }
 
         if (json.model_preference.contains("elytra") && json.skins.containsKey("elytra")) {
             String tmp = json.skins.get("elytra");
-            elytra = new File(textureFolder, tmp).toURI().toString();
+            elytra = "local:" + (new File(textureFolder, tmp).getAbsolutePath());
             hasProfile = true;
             UniSkinMod.log.info("Player Elytra Selected: {} {}", name, tmp);
         }
@@ -296,7 +298,9 @@ public class UniSkinProfile {
                 if (time <= 0) continue;
                 String[] hashes = tmp.substring(tmp.indexOf(",") + 1).split(",");
                 String[] urls = new String[hashes.length];
-                for (int i = 0; i < urls.length; i++) urls[i] = new File(textureFolder, hashes[i]).toURI().toString();
+                for (int i = 0; i < urls.length; i++) {
+                    urls[i] = "local:" + (new File(textureFolder, hashes[i]).getAbsolutePath());
+                }
                 dynSkin = new DynamicTexture(time, hashes, model, urls);
                 hasProfile = true;
                 UniSkinMod.log.info("Dynamic Skin Selected: {}", name);
@@ -320,7 +324,7 @@ public class UniSkinProfile {
                 String[] hashes = tmp.substring(tmp.indexOf(",") + 1).split(",");
                 String[] urls = new String[hashes.length];
                 for (int i = 0; i < urls.length; i++)
-                    urls[i] = new File(textureFolder, hashes[i]).toURI().toString();
+                    urls[i] = "local:" + (new File(textureFolder, hashes[i]).getAbsolutePath());
                 dynCape = new DynamicTexture(time, hashes, null, urls);
                 hasProfile = true;
                 UniSkinMod.log.info("Dynamic Cape Selected: {}", name);
@@ -343,7 +347,7 @@ public class UniSkinProfile {
                 String[] hashes = tmp.substring(tmp.indexOf(",") + 1).split(",");
                 String[] urls = new String[hashes.length];
                 for (int i = 0; i < urls.length; i++)
-                    urls[i] = new File(textureFolder, hashes[i]).toURI().toString();
+                    urls[i] = "local:" + (new File(textureFolder, hashes[i]).getAbsolutePath());
                 dynElytra = new DynamicTexture(time, hashes, null, urls);
                 hasProfile = true;
                 UniSkinMod.log.info("Dynamic Elytra Selected: {}", name);

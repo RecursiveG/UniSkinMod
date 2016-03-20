@@ -4,6 +4,9 @@ import org.devinprogress.uniskinmod.UniSkinMod;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
+import java.util.Collections;
+import java.util.Map;
+
 public class AsmTransformer extends BaseAsmTransformer {
     private static final String INVOKE_TARGET_CLASS = UniSkinMod.class.getName().replace(".", "/");
 
@@ -104,46 +107,28 @@ public class AsmTransformer extends BaseAsmTransformer {
     public static class skinManagerLoadElytraTransformer implements IMethodTransformer {
         @Override
         public void transform(ClassNode cn, String classObfName, MethodNode mn, String srgName, boolean devEnv) {
-            AbstractInsnNode last = ((JumpInsnNode) getNthInsnNode(mn, Opcodes.IFEQ, 2)).label.getNext().getNext();
-            LabelNode end = new LabelNode();
+            // printMethod(mn, null, null);
 
-            // map.containsKey(Type.ELYTRA), if not contain (false=0) then jump to end
-            mn.instructions.insertBefore(last, new VarInsnNode(Opcodes.ALOAD, 0));
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/client/resources/SkinManager$3$1", "val$map", "Ljava/util/Map;"));
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETSTATIC, "com/mojang/authlib/minecraft/MinecraftProfileTexture$Type", "ELYTRA", "Lcom/mojang/authlib/minecraft/MinecraftProfileTexture$Type;"));
-            mn.instructions.insertBefore(last, new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "containsKey", "(Ljava/lang/Object;)Z", true));
-            mn.instructions.insertBefore(last, new JumpInsnNode(Opcodes.IFEQ, end));
+            AbstractInsnNode start = getNthInsnNode(mn, Opcodes.ALOAD, 1); // copied
+            AbstractInsnNode end = ((JumpInsnNode) getNthInsnNode(mn, Opcodes.IFEQ, 1)).label; // not copied
+            AbstractInsnNode target = ((JumpInsnNode) getNthInsnNode(mn, Opcodes.IFEQ, 2)).label.getNext();
 
-            // Load SkinManager.this
-            mn.instructions.insertBefore(last, new VarInsnNode(Opcodes.ALOAD, 0));
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/client/resources/SkinManager$3$1", "this$1", "Lnet/minecraft/client/resources/SkinManager$3;"));
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/client/resources/SkinManager$3", "this$0", "Lnet/minecraft/client/resources/SkinManager;"));
-
-            // map.get(Type.ELYTRA) then checkcast
-            mn.instructions.insertBefore(last, new VarInsnNode(Opcodes.ALOAD, 0));
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/client/resources/SkinManager$3$1", "val$map", "Ljava/util/Map;"));
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETSTATIC, "com/mojang/authlib/minecraft/MinecraftProfileTexture$Type", "ELYTRA", "Lcom/mojang/authlib/minecraft/MinecraftProfileTexture$Type;"));
-            mn.instructions.insertBefore(last, new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true));
-            mn.instructions.insertBefore(last, new TypeInsnNode(Opcodes.CHECKCAST, "com/mojang/authlib/minecraft/MinecraftProfileTexture"));
-
-            // Type.ELYTRA
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETSTATIC, "com/mojang/authlib/minecraft/MinecraftProfileTexture$Type", "ELYTRA", "Lcom/mojang/authlib/minecraft/MinecraftProfileTexture$Type;"));
-
-            // Load skinAvailableCallback
-            mn.instructions.insertBefore(last, new VarInsnNode(Opcodes.ALOAD, 0));
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/client/resources/SkinManager$3$1", "this$1", "Lnet/minecraft/client/resources/SkinManager$3;"));
-            mn.instructions.insertBefore(last, new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/client/resources/SkinManager$3", "val$skinAvailableCallback", "Lnet/minecraft/client/resources/SkinManager$SkinAvailableCallback;"));
-
-            // Invoke loadSkin
-            mn.instructions.insertBefore(last, new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/client/resources/SkinManager", devEnv ? "loadSkin" : "func_152792_a", "(Lcom/mojang/authlib/minecraft/MinecraftProfileTexture;Lcom/mojang/authlib/minecraft/MinecraftProfileTexture$Type;Lnet/minecraft/client/resources/SkinManager$SkinAvailableCallback;)Lnet/minecraft/util/ResourceLocation;", false));
-
-            // Discard the return value
-            mn.instructions.insertBefore(last, new InsnNode(Opcodes.POP));
-
-            mn.instructions.insertBefore(last, end);
+            /* duplicate existed codes, replace SKIN with ELYTRA, also replace labels */
+            LabelNode labelNode = new LabelNode();
+            Map<LabelNode, LabelNode> labelMap = Collections.singletonMap((LabelNode) end, labelNode);
+            for (AbstractInsnNode i = start; i != end; i = i.getNext()) {
+                if (i instanceof LabelNode || i instanceof LineNumberNode) continue;
+                AbstractInsnNode copy = i.clone(labelMap);
+                if (copy.getOpcode() == Opcodes.GETSTATIC) ((FieldInsnNode) copy).name = "ELYTRA";
+                mn.instructions.insertBefore(target, copy);
+            }
+            mn.instructions.insertBefore(target, labelNode);
         }
     }
 
+    /**
+     * Transformer for AbstractClientPlayer.getLocationXXX() functions
+     */
     public static abstract class BaseGetDynamicTransformer implements IMethodTransformer {
         public void transform(MethodNode mn, String target, String type) {
             AbstractInsnNode n = getNthInsnNode(mn, Opcodes.ASTORE, 1).getNext();
@@ -216,6 +201,14 @@ public class AsmTransformer extends BaseAsmTransformer {
         }
     }
 
+    /**
+     * Insert codes before bindTexture(). Making skulls also render dynamic skin.
+     * <pre>
+     *     resourcelocaton = UniSkinMod.getDynamicSkinResourceForSkull(p_188190_7_, resourcelocaton)
+     * </pre>
+     * LocalVars : resourcelocaton @11
+     * p_188190_7_      @7
+     */
     @RegisterTransformer(
             className = "net.minecraft.client.renderer.tileentity.TileEntitySkullRenderer",
             srgName = "func_188190_a",

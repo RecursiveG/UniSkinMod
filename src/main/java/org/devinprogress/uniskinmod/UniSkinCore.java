@@ -20,14 +20,11 @@ import org.apache.logging.log4j.Level;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-
-/* These imports require forge and provided support for dynamic skins
- * Comment them out if compiled as a standalone library.
- */
 
 /**
  * Provided the interface to interact with Mojang codes
@@ -51,7 +48,24 @@ public class UniSkinCore {
         for (String str : cfg.legacyCapeURIs) UniSkinMod.log.info("Added Cape URI: {}", str);
         mojangProfileRepo = new YggdrasilAuthenticationService(Minecraft.getMinecraft().getProxy(), UUID.randomUUID().toString())
                 .createProfileRepository();
-        dynamicSkinManager = new DynamicSkinManager(cfg.rootURIs, localSkin);
+
+        File assertDir;
+        try {
+            Field f;
+            try {
+                f = Minecraft.class.getDeclaredField("field_110446_Y");
+            } catch (NoSuchFieldException ex) {
+                f = null;
+            }
+            if (f == null) f = Minecraft.class.getDeclaredField("fileAssets");
+            f.setAccessible(true);
+            Object obj = f.get(Minecraft.getMinecraft());
+            assertDir = (File) obj;
+        } catch (ReflectiveOperationException ex) {
+            throw new RuntimeException("Unable to determine skin cache dir.", ex);
+        }
+        if (assertDir == null) throw new RuntimeException("Unable to determine skin cache dir.");
+        dynamicSkinManager = new DynamicSkinManager(cfg.rootURIs, localSkin, new File(assertDir, "skins"));
     }
 
     public void injectProfile(GameProfile profile) {
@@ -219,7 +233,8 @@ public class UniSkinCore {
                 try {
                     File localFile = new File(localTexture, hash);
                     FileUtils.writeByteArrayToFile(localFile, skinData);
-                    payload.addSkin(localFile.toURI().toString(), "default");
+                    dynamicSkinManager.forceLoadTexture(localFile, MinecraftProfileTexture.Type.SKIN, false);
+                    payload.addSkin("http://127.0.0.1/" + hash, "default");
                     UniSkinMod.log.info("Injecting legacy skin: {} {}", playerName, hash);
                 } catch (IOException ex) {
                     UniSkinMod.log.catching(Level.WARN, ex);
@@ -240,7 +255,8 @@ public class UniSkinCore {
                 try {
                     File localFile = new File(localTexture, hash);
                     FileUtils.writeByteArrayToFile(localFile, capeData);
-                    payload.addCape(localFile.toURI().toString());
+                    dynamicSkinManager.forceLoadTexture(localFile, MinecraftProfileTexture.Type.CAPE, false);
+                    payload.addCape("http://127.0.0.1/" + hash);
                     UniSkinMod.log.info("Injecting legacy cape: {} {}", playerName, hash);
                 } catch (IOException ex) {
                     UniSkinMod.log.catching(Level.WARN, ex);
@@ -251,9 +267,9 @@ public class UniSkinCore {
         payload.dumpIntoGameProfile(profile);
     }
 
+
     /* Codes below require forge and provided support for dynamic skins
      * Comment them out if compiled as a standalone library. */
-
 
     /**
      * called from AbstractClientPlayer.getLocationSkin()
@@ -264,7 +280,6 @@ public class UniSkinCore {
 
     /**
      * called from TileEntitySkllRenderer.renderSkull()
-     * <pre>resourcelocation = UniSkinMod.getDynamicSkinResourceForSkull(p_188190_7_,DefaultPlayerSkin.getDefaultSkin(uuid));</pre>
      */
     public ResourceLocation getDynamicSkinResourceForSkull(GameProfile gp, ResourceLocation def) {
         if (gp == null) return def;
@@ -278,6 +293,8 @@ public class UniSkinCore {
                 return s.skin[id];
             }
         } catch (ExecutionException ex) {
+            UniSkinMod.log.catching(Level.WARN, ex);
+            return def;
         }
         return def;
     }
@@ -297,6 +314,8 @@ public class UniSkinCore {
                         return s.model;
                     }
                 } catch (ExecutionException ex) {
+                    UniSkinMod.log.catching(Level.WARN, ex);
+                    return null;
                 }
             }
         }
@@ -315,11 +334,13 @@ public class UniSkinCore {
                 try {
                     DynamicSkinManager.CachedDynamicSkin s = dynamicSkinManager.cache.get(name);
                     if (s.cape != null && s.cape.length != 0) {
-                        double spf = (double) s.skinInterval / (double) s.skin.length;
+                        double spf = (double) s.capeInterval / (double) s.cape.length;
                         int id = ((int) Math.floor((double) (System.currentTimeMillis() % s.capeInterval) / spf)) % (s.cape.length);
                         return s.cape[id];
                     }
                 } catch (ExecutionException ex) {
+                    UniSkinMod.log.catching(Level.WARN, ex);
+                    return null;
                 }
             }
         }
@@ -338,11 +359,13 @@ public class UniSkinCore {
                 try {
                     DynamicSkinManager.CachedDynamicSkin s = dynamicSkinManager.cache.get(name);
                     if (s.elytra != null && s.elytra.length != 0) {
-                        double spf = (double) s.skinInterval / (double) s.skin.length;
+                        double spf = (double) s.elytraInterval / (double) s.elytra.length;
                         int id = ((int) Math.floor((double) (System.currentTimeMillis() % s.elytraInterval) / spf)) % (s.elytra.length);
                         return s.elytra[id];
                     }
                 } catch (ExecutionException ex) {
+                    UniSkinMod.log.catching(Level.WARN, ex);
+                    return null;
                 }
             }
         }

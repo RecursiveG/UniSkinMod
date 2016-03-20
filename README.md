@@ -17,6 +17,7 @@ Current version is v1.4-alpha2 for Minecraft 1.9
 ### Configure
 
 - The config file is located in `config/UniSkinMod/UniSkinMod.json`
+- Local skin folder is `config/UniSkinMod/local_skins/`. You have to create it manually.
 - For more info about the "Root" URL, visit [UniSkinAPI Document](https://github.com/RecursiveG/UniSkinServer/blob/master/doc/UniSkinAPI_en.md) please!
 
 ### License

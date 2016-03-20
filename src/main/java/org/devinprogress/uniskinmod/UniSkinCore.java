@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
@@ -165,9 +165,10 @@ public class UniSkinCore {
                 UniSkinProfile api = UniSkinProfile.getLocalProfile(f, new File(localSkinDir, "textures"));
                 if (api == null) return;
                 MojangTexturePayload payload = MojangTexturePayload.fromGameProfile(profile);
-                payload.addCape(api.getCapeURL());
-                payload.addSkin(api.getSkinURL(), api.getModel());
-                payload.addElytra(api.getElytraURL());
+                payload.addCape(dynamicSkinManager.forceLoadTexture(api.getCapeURL(), MinecraftProfileTexture.Type.CAPE, false));
+                boolean isAlex = ("slim".equalsIgnoreCase(api.getModel()) || "alex".equalsIgnoreCase(api.getModel()));
+                payload.addSkin(dynamicSkinManager.forceLoadTexture(api.getSkinURL(), MinecraftProfileTexture.Type.SKIN, isAlex), api.getModel());
+                payload.addElytra(dynamicSkinManager.forceLoadTexture(api.getElytraURL(), MinecraftProfileTexture.Type.ELYTRA, false));
                 payload.dumpIntoGameProfile(profile);
                 return;
             }
@@ -202,13 +203,15 @@ public class UniSkinCore {
 
     private static byte[] fetchURL(String url) {
         try {
-            URLConnection connection = new URL(url).openConnection();
+            HttpURLConnection connection = (HttpURLConnection) (new URL(url).openConnection(Minecraft.getMinecraft().getProxy()));
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(10000);
+            connection.setInstanceFollowRedirects(true);
             InputStream input = connection.getInputStream();
             return IOUtils.toByteArray(input);
         } catch (Exception ex) {
-            UniSkinMod.log.catching(Level.WARN, ex);
+            UniSkinMod.log.catching(Level.DEBUG, ex);
+            UniSkinMod.log.warn("Failed to fetch url: {}", url);
             return null;
         }
     }

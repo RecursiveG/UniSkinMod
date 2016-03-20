@@ -22,6 +22,8 @@ public class UniSkinConfig {
         if (!configFile.exists()) {
             UniSkinMod.log.info("Creating new configuration file {}", configFile.getPath());
             UniSkinConfig tmpCfg = new UniSkinConfig();
+            tmpCfg.rootURIs.add("http://www.skinme.cc/uniskin");
+            tmpCfg.rootURIs.add("https://skin.prinzeugen.net");
             String json = gson.toJson(tmpCfg);
             configFile.getParentFile().mkdirs();
             FileWriter wr = new FileWriter(configFile);

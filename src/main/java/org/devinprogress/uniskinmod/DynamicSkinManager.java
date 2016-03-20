@@ -46,7 +46,7 @@ public class DynamicSkinManager {
     }
 
     public final LoadingCache<String, CachedDynamicSkin> cache = CacheBuilder.newBuilder()
-            .expireAfterWrite(60, TimeUnit.SECONDS).build(new CacheLoader<String, CachedDynamicSkin>() {
+            .expireAfterWrite(30, TimeUnit.MINUTES).build(new CacheLoader<String, CachedDynamicSkin>() {
 
                 @Override
                 public CachedDynamicSkin load(String playerName) throws Exception {
@@ -172,6 +172,20 @@ public class DynamicSkinManager {
                     new MinecraftProfileTexture(url, metadata), textureType);
         } catch (Exception ex) {
             UniSkinMod.log.catching(Level.WARN, ex);
+        }
+    }
+
+    public String forceLoadTexture(String local_file, MinecraftProfileTexture.Type textureType, boolean isAlex) {
+        try {
+            if (local_file == null || textureType == null) return null;
+            if (!local_file.startsWith("local:")) return null;
+            File src = new File(local_file.substring(6));
+            String sha256 = DigestUtils.sha256Hex(new FileInputStream(src)).toLowerCase();
+            forceLoadTexture(src, textureType, isAlex);
+            return "http://127.0.0.1/" + sha256;
+        } catch (Exception ex) {
+            UniSkinMod.log.catching(Level.WARN, ex);
+            return null;
         }
     }
 }

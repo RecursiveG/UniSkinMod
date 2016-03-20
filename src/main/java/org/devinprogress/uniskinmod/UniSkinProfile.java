@@ -50,19 +50,31 @@ public class UniSkinProfile {
     }
 
     public static UniSkinProfile getProfile(final String name, String root) {
-        if (root.endsWith("/")) root = root.substring(0, root.length() - 1);
-        UniSkinProfile prof = new UniSkinProfile(name, root);
-        return prof.hasProfile ? prof : null;
+        try {
+            if (root.endsWith("/")) root = root.substring(0, root.length() - 1);
+            UniSkinProfile prof = new UniSkinProfile(name, root);
+            return prof.hasProfile ? prof : null;
+        } catch (Exception ex) {
+            UniSkinMod.log.catching(Level.DEBUG, ex);
+            UniSkinMod.log.warn("Failed to get remote profile for {} @{} due to Exception: {}", name, root, ex);
+            return null;
+        }
     }
 
     public static UniSkinProfile getLocalProfile(File profileFile, File textureFolder) {
         if (profileFile == null || textureFolder == null) return null;
-        UniSkinProfile prof = new UniSkinProfile(profileFile, textureFolder);
-        return prof.hasProfile ? prof : null;
+        try {
+            UniSkinProfile prof = new UniSkinProfile(profileFile, textureFolder);
+            return prof.hasProfile ? prof : null;
+        } catch (Exception ex) {
+            UniSkinMod.log.catching(Level.DEBUG, ex);
+            UniSkinMod.log.warn("Failed to get local profile @{} due to Exception: {}", profileFile.getAbsolutePath(), ex);
+            return null;
+        }
     }
 
     // === Profile === //
-    public boolean hasProfile = false;
+    private boolean hasProfile = false;
 
     private static String httpRequest(String url) {
         try {
@@ -130,7 +142,16 @@ public class UniSkinProfile {
             return;
         }
 
-        if (!json.player_name.equalsIgnoreCase(name)) return;
+        if (json == null || !name.equalsIgnoreCase(json.player_name)) return;
+
+        if (json.cape != null && json.cape.length() > 3) {
+            cape = URL_TEXTURE_FMT.replace("{root}", root).replace("{texture_hash}", json.cape);
+            hasProfile = true;
+            UniSkinMod.log.info("Player Cape Selected: {} {}", name, json.cape);
+        }
+
+        if (json.model_preference == null || json.skins == null) return;
+
         for (String m : json.model_preference) {
             if (json.skins.containsKey(m) && (m.equals("default") || m.equals("slim"))) {
                 model = m;
@@ -146,11 +167,6 @@ public class UniSkinProfile {
             cape = URL_TEXTURE_FMT.replace("{root}", root).replace("{texture_hash}", tmp);
             hasProfile = true;
             UniSkinMod.log.info("Player Cape Selected: {} {}", name, tmp);
-        }
-        if (json.cape != null && json.cape.length() > 3 && cape != null) {
-            cape = URL_TEXTURE_FMT.replace("{root}", root).replace("{texture_hash}", json.cape);
-            hasProfile = true;
-            UniSkinMod.log.info("Player Cape Selected: {} {}", name, json.cape);
         }
 
         if (json.model_preference.contains("elytra") && json.skins.containsKey("elytra")) {

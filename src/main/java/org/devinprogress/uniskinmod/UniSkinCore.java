@@ -23,10 +23,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Collections;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -49,7 +46,7 @@ public class UniSkinCore {
         for (String str : cfg.rootURIs) UniSkinMod.log.info("Added Root URI: {}", str);
         for (String str : cfg.legacySkinURIs) UniSkinMod.log.info("Added Skin URI: {}", str);
         for (String str : cfg.legacyCapeURIs) UniSkinMod.log.info("Added Cape URI: {}", str);
-        UniSkinMod.log.info("Load genuine skins: {}", cfg.loadGenuineSkins? "Enabled": "Disabled");
+        UniSkinMod.log.info("Load genuine skins: {}", cfg.loadGenuineSkins ? "Enabled" : "Disabled");
         mojangProfileRepo = new YggdrasilAuthenticationService(Minecraft.getMinecraft().getProxy(), UUID.randomUUID().toString())
                 .createProfileRepository();
 
@@ -65,7 +62,9 @@ public class UniSkinCore {
             f.setAccessible(true);
             Object obj = f.get(Minecraft.getMinecraft());
             assertDir = (File) obj;
-        } catch (ReflectiveOperationException ex) {
+        } catch (NoSuchFieldException ex) {
+            throw new RuntimeException("Unable to determine skin cache dir.", ex);
+        } catch (IllegalAccessException ex) {
             throw new RuntimeException("Unable to determine skin cache dir.", ex);
         }
         if (assertDir == null) throw new RuntimeException("Unable to determine skin cache dir.");
@@ -170,10 +169,9 @@ public class UniSkinCore {
                 UniSkinProfile api = UniSkinProfile.getLocalProfile(f, new File(localSkinDir, "textures"));
                 if (api == null) return;
                 MojangTexturePayload payload = MojangTexturePayload.fromGameProfile(profile);
-                payload.addCape(dynamicSkinManager.forceLoadTexture(api.getCapeURL(), MinecraftProfileTexture.Type.CAPE, false));
-                boolean isAlex = ("slim".equalsIgnoreCase(api.getModel()) || "alex".equalsIgnoreCase(api.getModel()));
-                payload.addSkin(dynamicSkinManager.forceLoadTexture(api.getSkinURL(), MinecraftProfileTexture.Type.SKIN, isAlex), api.getModel());
-                payload.addElytra(dynamicSkinManager.forceLoadTexture(api.getElytraURL(), MinecraftProfileTexture.Type.ELYTRA, false));
+                payload.addCape(dynamicSkinManager.forceCopyTexture(api.getCapeURL()));
+                payload.addSkin(dynamicSkinManager.forceCopyTexture(api.getSkinURL()), api.getModel());
+                payload.addElytra(dynamicSkinManager.forceCopyTexture(api.getElytraURL()));
                 payload.dumpIntoGameProfile(profile);
                 return;
             }
@@ -241,7 +239,7 @@ public class UniSkinCore {
                 try {
                     File localFile = new File(localTexture, hash);
                     FileUtils.writeByteArrayToFile(localFile, skinData);
-                    dynamicSkinManager.forceLoadTexture(localFile, MinecraftProfileTexture.Type.SKIN, false);
+                    dynamicSkinManager.forceCopyTexture(localFile);
                     payload.addSkin("http://127.0.0.1/" + hash, "default");
                     UniSkinMod.log.info("Injecting legacy skin: {} {}", playerName, hash);
                 } catch (IOException ex) {
@@ -263,7 +261,7 @@ public class UniSkinCore {
                 try {
                     File localFile = new File(localTexture, hash);
                     FileUtils.writeByteArrayToFile(localFile, capeData);
-                    dynamicSkinManager.forceLoadTexture(localFile, MinecraftProfileTexture.Type.CAPE, false);
+                    dynamicSkinManager.forceCopyTexture(localFile);
                     payload.addCape("http://127.0.0.1/" + hash);
                     UniSkinMod.log.info("Injecting legacy cape: {} {}", playerName, hash);
                 } catch (IOException ex) {
@@ -289,38 +287,24 @@ public class UniSkinCore {
     /**
      * called from TileEntitySkllRenderer.renderSkull()
      */
-    private final Set<String> loading = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-
     public ResourceLocation getDynamicSkinResourceForSkull(GameProfile gp, ResourceLocation def) {
         if (gp == null) return def;
-        final String name = gp.getName();
+        String name = gp.getName();
         if (name == null || name.length() <= 0) return def;
-
-        if (loading.contains(name)) return def;
-        DynamicSkinManager.CachedDynamicSkin s = dynamicSkinManager.cache.getIfPresent(name);
-        if (s == null) {
-            loading.add(name);
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        dynamicSkinManager.cache.get(name);
-                    } catch (ExecutionException ex) {
-                        UniSkinMod.log.catching(Level.WARN, ex);
-                    }
-                    loading.remove(name);
-                }
-            }, "Skull-Texture-Fetch-" + name).start();
+        try {
+            DynamicSkinManager.CachedDynamicSkin s = dynamicSkinManager.cache.get(name);
+            if (s.skin != null && s.skin.length != 0) {
+                double spf = (double) s.skinInterval / (double) s.skin.length;
+                int id = ((int) Math.floor((double) (System.currentTimeMillis() % s.skinInterval) / spf)) % (s.skin.length);
+                return s.skin[id];
+            }
+        } catch (ExecutionException ex) {
+            UniSkinMod.log.catching(Level.WARN, ex);
             return def;
         }
-        if (s.skin != null && s.skin.length != 0) {
-            double spf = (double) s.skinInterval / (double) s.skin.length;
-            int id = ((int) Math.floor((double) (System.currentTimeMillis() % s.skinInterval) / spf)) % (s.skin.length);
-            return s.skin[id];
-        }
-
         return def;
     }
+
 
     /**
      * called from AbstractClientPlayer.getSkinType()

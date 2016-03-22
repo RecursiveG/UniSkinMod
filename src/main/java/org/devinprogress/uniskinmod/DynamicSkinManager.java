@@ -154,6 +154,7 @@ public class DynamicSkinManager {
         }
     }
 
+    /* Do not call this from external threads, GL error will occur */
     public void forceLoadTexture(File sourceFile, MinecraftProfileTexture.Type textureType, boolean isAlex) {
         try {
             File dstFolder = this.mcSkinCacheDir;
@@ -175,13 +176,27 @@ public class DynamicSkinManager {
         }
     }
 
-    public String forceLoadTexture(String local_file, MinecraftProfileTexture.Type textureType, boolean isAlex) {
+    public String forceCopyTexture(String local_file) {
         try {
-            if (local_file == null || textureType == null) return null;
+            if (local_file == null) return null;
             if (!local_file.startsWith("local:")) return null;
-            File src = new File(local_file.substring(6));
-            String sha256 = DigestUtils.sha256Hex(new FileInputStream(src)).toLowerCase();
-            forceLoadTexture(src, textureType, isAlex);
+            return forceCopyTexture(new File(local_file.substring(6)));
+        } catch (Exception ex) {
+            UniSkinMod.log.catching(Level.WARN, ex);
+            return null;
+        }
+    }
+
+    public String forceCopyTexture(File f) {
+        try {
+            if (f == null) return null;
+            File dstFolder = this.mcSkinCacheDir;
+            String sha256 = DigestUtils.sha256Hex(new FileInputStream(f)).toLowerCase();
+            String dir = sha256.substring(0, 2);
+            File subDir = new File(dstFolder, dir);
+            subDir.mkdirs();
+            File dstFile = new File(subDir, sha256);
+            FileUtils.copyFile(f, dstFile);
             return "http://127.0.0.1/" + sha256;
         } catch (Exception ex) {
             UniSkinMod.log.catching(Level.WARN, ex);

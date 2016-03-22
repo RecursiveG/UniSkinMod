@@ -22,7 +22,7 @@ Here is the default configure:
     {
       "rootURIs": [
         "http://www.skinme.cc/uniskin",
-        "https://skin.prinzeugen.net"
+        "https://skin.prinzeugen.net/usm"
       ],
       "legacySkinURIs": [],
       "legacyCapeURIs": []
@@ -55,7 +55,7 @@ For more info about the "Root" URL, visit [UniSkinAPI Document](https://github.c
 
 ### 配置说明
 
-配置文件位于`config/UniSkinMod/UniSkinMod.json`。````````
+配置文件位于`config/UniSkinMod/UniSkinMod.json`。
 默认配置如下：
 
     {

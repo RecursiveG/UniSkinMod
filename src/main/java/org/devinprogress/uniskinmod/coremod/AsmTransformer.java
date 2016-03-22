@@ -229,4 +229,59 @@ public class AsmTransformer extends BaseAsmTransformer {
             mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ASTORE, 11));
         }
     }
+
+    /*
+     * Make SkinManager.cache load textures asynchronously
+    @RegisterTransformer(
+            className = "net.minecraft.client.resources.SkinManager",
+            mcpName = "<init>",
+            desc = "(Lnet/minecraft/client/renderer/texture/TextureManager;Ljava/io/File;Lcom/mojang/authlib/minecraft/MinecraftSessionService;)V"
+
+    )
+    public static class delayedLoadingCacheTransformaer implements IMethodTransformer {
+        @Override
+        public void transform(ClassNode cn, String classObfName, MethodNode mn, String srgName, boolean devEnv) {
+            AbstractInsnNode n = getNthInsnNode(mn, Opcodes.PUTFIELD, 4);
+            mn.instructions.insertBefore(n, new MethodInsnNode(Opcodes.INVOKESTATIC, "org/devinprogress/uniskinmod/coremod/DelayedLoadingCache",
+                    "wrap", "(Lcom/google/common/cache/LoadingCache;)Lcom/google/common/cache/LoadingCache;", false));
+        }
+    }
+    */
+
+    /**
+     * Make SkinManager.loadSkinFromCache(), which is used by skull
+     * texture loading, loads textures asynchronously.
+     * Thus avoids main thread freezing.
+     */
+    @RegisterTransformer(
+            className = "net.minecraft.client.resources.SkinManager",
+            mcpName = "loadSkinFromCache",
+            srgName = "func_152788_a",
+            desc = "(Lcom/mojang/authlib/GameProfile;)Ljava/util/Map;"
+    )
+    public static class asyncLoadingCacheTransformer implements IMethodTransformer {
+        @Override
+        public void transform(ClassNode cn, String classObfName, MethodNode mn, String srgName, boolean devEnv) {
+            MethodNode wrapperMethod = new MethodNode(mn.access, mn.name, mn.desc, null,
+                    mn.exceptions.toArray(new String[mn.exceptions.size()]));
+            mn.name = "loadSkinFromCache_old";
+            mn.access = Opcodes.ACC_PUBLIC;
+
+            wrapperMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+            wrapperMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            wrapperMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, INVOKE_TARGET_CLASS, "loadSkinFromCache_wrapper",
+                    "(Lcom/mojang/authlib/GameProfile;Lorg/devinprogress/uniskinmod/coremod/ILoadSkinFromCache_old;)Ljava/util/Map;", false));
+            wrapperMethod.instructions.add(new InsnNode(Opcodes.ARETURN));
+            wrapperMethod.maxStack = 3;
+
+            cn.methods.add(wrapperMethod);
+            cn.interfaces.add(ILoadSkinFromCache_old.class.getName().replace(".", "/"));
+
+            MethodNode getCacheMethod = new MethodNode(Opcodes.ACC_PUBLIC, "getLoadingCache", "()Lcom/google/common/cache/LoadingCache;", null, new String[0]);
+            getCacheMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            getCacheMethod.instructions.add(getNthInsnNode(mn, Opcodes.GETFIELD, 1).clone(Collections.<LabelNode, LabelNode>emptyMap()));
+            getCacheMethod.instructions.add(new InsnNode(Opcodes.ARETURN));
+            cn.methods.add(getCacheMethod);
+        }
+    }
 }

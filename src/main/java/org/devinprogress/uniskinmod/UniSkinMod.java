@@ -13,9 +13,13 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.devinprogress.uniskinmod.coremod.IGetTexture_old;
+import org.devinprogress.uniskinmod.coremod.ILoadSkinFromCache_old;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Mod(modid = "uniskinmod")
@@ -84,5 +88,27 @@ public class UniSkinMod {
 
     public static ResourceLocation getDynamicElytraResource(NetworkPlayerInfo player) {
         return instance.core == null ? null : instance.core.getDynamicElytraResource(player);
+    }
+
+
+    private static final Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> defaultReturn = Collections.emptyMap();
+    private static final Set<GameProfile> onLoading = Collections.newSetFromMap(new ConcurrentHashMap<GameProfile, Boolean>());
+
+    public static Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> loadSkinFromCache_wrapper(final GameProfile gp, final ILoadSkinFromCache_old skinManager) {
+        if (onLoading.contains(gp)) return defaultReturn;
+        Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> ret = skinManager.getLoadingCache().getIfPresent(gp);
+        if (ret == null) {
+            onLoading.add(gp);
+            String name = gp.getName() == null ? gp.toString() : gp.getName();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    skinManager.getLoadingCache().getUnchecked(gp);
+                    onLoading.remove(gp);
+                }
+            }, "Skin-Fetch-" + name).start();
+            return defaultReturn;
+        }
+        return ret;
     }
 }

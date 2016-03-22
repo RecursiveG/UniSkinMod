@@ -23,7 +23,10 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -284,21 +287,36 @@ public class UniSkinCore {
     /**
      * called from TileEntitySkllRenderer.renderSkull()
      */
+    private final Set<String> loading = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+
     public ResourceLocation getDynamicSkinResourceForSkull(GameProfile gp, ResourceLocation def) {
         if (gp == null) return def;
-        String name = gp.getName();
+        final String name = gp.getName();
         if (name == null || name.length() <= 0) return def;
-        try {
-            DynamicSkinManager.CachedDynamicSkin s = dynamicSkinManager.cache.get(name);
-            if (s.skin != null && s.skin.length != 0) {
-                double spf = (double) s.skinInterval / (double) s.skin.length;
-                int id = ((int) Math.floor((double) (System.currentTimeMillis() % s.skinInterval) / spf)) % (s.skin.length);
-                return s.skin[id];
-            }
-        } catch (ExecutionException ex) {
-            UniSkinMod.log.catching(Level.WARN, ex);
+
+        if (loading.contains(name)) return def;
+        DynamicSkinManager.CachedDynamicSkin s = dynamicSkinManager.cache.getIfPresent(name);
+        if (s == null) {
+            loading.add(name);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        dynamicSkinManager.cache.get(name);
+                    } catch (ExecutionException ex) {
+                        UniSkinMod.log.catching(Level.WARN, ex);
+                    }
+                    loading.remove(name);
+                }
+            }, "Skull-Texture-Fetch-" + name).start();
             return def;
         }
+        if (s.skin != null && s.skin.length != 0) {
+            double spf = (double) s.skinInterval / (double) s.skin.length;
+            int id = ((int) Math.floor((double) (System.currentTimeMillis() % s.skinInterval) / spf)) % (s.skin.length);
+            return s.skin[id];
+        }
+
         return def;
     }
 

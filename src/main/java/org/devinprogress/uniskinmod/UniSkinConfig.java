@@ -14,6 +14,7 @@ public class UniSkinConfig {
     public List<String> rootURIs = new ArrayList<String>();
     public List<String> legacySkinURIs = new ArrayList<String>();
     public List<String> legacyCapeURIs = new ArrayList<String>();
+    public boolean loadGenuineSkins = true;
 
     public static UniSkinConfig loadFromFile(File configFile) throws IOException {
         if (configFile == null) return null;

@@ -49,6 +49,7 @@ public class UniSkinCore {
         for (String str : cfg.rootURIs) UniSkinMod.log.info("Added Root URI: {}", str);
         for (String str : cfg.legacySkinURIs) UniSkinMod.log.info("Added Skin URI: {}", str);
         for (String str : cfg.legacyCapeURIs) UniSkinMod.log.info("Added Cape URI: {}", str);
+        UniSkinMod.log.info("Load genuine skins: {}", cfg.loadGenuineSkins? "Enabled": "Disabled");
         mojangProfileRepo = new YggdrasilAuthenticationService(Minecraft.getMinecraft().getProxy(), UUID.randomUUID().toString())
                 .createProfileRepository();
 
@@ -108,6 +109,7 @@ public class UniSkinCore {
     }
 
     private void injectGenuineProfile(GameProfile profile) {
+        if (!cfg.loadGenuineSkins) return;
         MinecraftSessionService sessionService = Minecraft.getMinecraft().getSessionService();
         if (mojangProfileRepo == null || sessionService == null) {
             UniSkinMod.log.warn("Cannot perform mojang id lookup since YggdrasilGameProfileRepository or sessionService is null");

@@ -7,7 +7,7 @@ Current version is v1.4-dev2 for Minecraft 1.9
 
 - Unlimited number of custom URLs
 - HD skins supported via Optifine (Unconfirmed)
-- Transparent pixels allowed
+- ~~Transparent pixels allowed~~
 - Skull support
 - UniSkinAPI support
 - Legacy style link supported again, skin and cape only

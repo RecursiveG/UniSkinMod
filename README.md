@@ -1,7 +1,7 @@
 ### Universal Skin Mod
 This is a mod for Minecraft, allowing players to select any "SkinServer" they like.
 
-Current version is v1.4-dev1 for Minecraft 1.9
+Current version is v1.4-dev2 for Minecraft 1.9
 
 ### Features
 

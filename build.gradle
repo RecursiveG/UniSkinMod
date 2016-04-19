@@ -12,14 +12,17 @@ buildscript {
 }
 apply plugin: 'net.minecraftforge.gradle.forge'
 
-version = "1.4-dev1"
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+version = "1.4-dev2"
 group = "org.devinprogress.uniskinmod"
-archivesBaseName = "UniSkinMod-1.9"
+archivesBaseName = "UniSkinMod-1.9-forge1865"
 
 minecraft {
-    version = "1.9-12.16.0.1770-1.9"
-    runDir = "run"
-    mappings = "snapshot_20160312"
+    version = "1.9-12.16.0.1865-1.9"
+    runDir = "../gameDir"
+    mappings = "snapshot_20160419"
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
 }
 

@@ -18,12 +18,12 @@ public class AsmTransformer extends BaseAsmTransformer {
      * Invalid the ImageBufferDownload.setAreaOpaque() method, allowing transparent skin textures
      * Make the method returns immediately.
      */
-    /* @RegisterTransformer(
+    @RegisterTransformer(
             className = "net.minecraft.client.renderer.ImageBufferDownload",
             srgName = "func_78433_b",
             mcpName = "setAreaOpaque",
             desc = "(IIII)V"
-    ) */
+    )
     public static class setAreaOpaqueTransformer implements IMethodTransformer {
         @Override
         public void transform(ClassNode cn, String classObfName, MethodNode mn, String srgName, boolean devEnv) {
@@ -33,6 +33,14 @@ public class AsmTransformer extends BaseAsmTransformer {
             mn.maxStack = 0;
         }
     }
+
+    @RegisterTransformer(
+            className = "net.minecraft.client.renderer.ImageBufferDownload",
+            srgName = "func_78434_a",
+            mcpName = "setAreaTransparent",
+            desc = "(IIII)V"
+    )
+    public static class setAreaTransparentTransformer extends setAreaOpaqueTransformer{}
 
     /**
      * Hijack YggdrasilMinecraftSessionService.isWhitelistedDomain(String url)

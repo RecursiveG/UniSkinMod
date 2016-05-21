@@ -4,7 +4,7 @@ import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 
 import java.util.Map;
 
-@IFMLLoadingPlugin.MCVersion("1.9")
+@IFMLLoadingPlugin.MCVersion("1.9.4")
 public class UniSkinAsmLoader implements IFMLLoadingPlugin {
 
     @Override

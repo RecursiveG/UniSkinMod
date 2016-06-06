@@ -292,4 +292,47 @@ public class AsmTransformer extends BaseAsmTransformer {
             cn.methods.add(getCacheMethod);
         }
     }
+
+    /**
+     * Minecraft client attempts to fill the proper GameProfile for SkullItems.
+     * This will freeze the client thread.
+     *
+     * TileEntityItemStackRenderer line 74:
+     *
+     * <pre>
+     *     gameprofile = TileEntitySkull.updateGameprofile(lvt_2_2_);
+     *     nbttagcompound.removeTag("SkullOwner");
+     *     nbttagcompound.setTag("SkullOwner", NBTUtil.writeGameProfile(new NBTTagCompound(), gameprofile));
+     * </pre>
+     *
+     * changed to
+     *
+     * <pre>
+     *     UniSkinMod.loadSkullTexture(lvt_2_2_, nbttagcompound);
+     *     return;
+     * </pre>
+     */
+    @RegisterTransformer(
+            className = "net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer",
+            mcpName = "renderByItem",
+            srgName = "func_179022_a",
+            desc = "(Lnet/minecraft/item/ItemStack;)V"
+    )
+    public static class asyncSkullLoadingTransformer implements IMethodTransformer {
+        @Override
+        public void transform(ClassNode cn, String classObfName, MethodNode mn, String srgName, boolean devEnv) {
+            AbstractInsnNode n = getNthInsnNode(mn, Opcodes.LDC, 8).getNext().getNext().getNext().getNext();
+            mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD, 4));
+            mn.instructions.insertBefore(n, new VarInsnNode(Opcodes.ALOAD, 3));
+            mn.instructions.insertBefore(n, new MethodInsnNode(Opcodes.INVOKESTATIC, INVOKE_TARGET_CLASS,"loadSkullTexture",
+                    "(Lcom/mojang/authlib/GameProfile;Lnet/minecraft/nbt/NBTTagCompound;)V", false));
+            mn.instructions.insertBefore(n, new InsnNode(Opcodes.RETURN));
+            /*
+            AbstractInsnNode n2 = getNthInsnNode(mn, Opcodes.LDC, 10).getNext().getNext().getNext().getNext().getNext().getNext().getNext();
+            LabelNode label = new LabelNode();
+            mn.instructions.insertBefore(n, new JumpInsnNode(Opcodes.GOTO, label));
+            mn.instructions.insertBefore(n2, label);
+            */
+        }
+    }
 }
